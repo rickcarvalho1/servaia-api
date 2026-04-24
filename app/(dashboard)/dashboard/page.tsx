@@ -52,7 +52,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
-              className="text-3xl font-bold tracking-tight" style2={{ color: '#0E1117' }}>
+              className="text-3xl font-bold tracking-tight text-[#0E1117]">
             Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}, {member.full_name.split(' ')[0]} 👋
           </h1>
           <p className="text-sm mt-1" style={{ color: '#6B7490' }}>
