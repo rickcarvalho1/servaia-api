@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Briefcase, Plus, CheckCircle2, XCircle, Clock, ArrowUpRight } from 'lucide-react'
+import { Briefcase, Plus, CheckCircle2, XCircle, Clock } from 'lucide-react'
 
 export default async function JobsPage() {
   const supabase = await createClient()
@@ -19,7 +19,7 @@ export default async function JobsPage() {
 
   const { data: jobs } = await supabase
     .from('payments')
-    .select('id, amount, payment_status, crew_member, completed_at, customers(full_name), job_services(name, price_charged)')
+    .select('id, amount, payment_status, crew_member, completed_at, customers(full_name, name), job_services(name, price_charged)')
     .eq('business_id', businessId)
     .order('completed_at', { ascending: false })
     .limit(100)
@@ -50,9 +50,7 @@ export default async function JobsPage() {
           <div className="py-20 text-center">
             <Briefcase size={40} className="mx-auto mb-4 text-[#DDE1EC]" />
             <p className="font-semibold mb-1 text-[#0E1117]">No jobs yet</p>
-            <p className="text-sm mb-4 text-[#6B7490]">
-              Mark your first job complete to start collecting.
-            </p>
+            <p className="text-sm mb-4 text-[#6B7490]">Mark your first job complete to start collecting.</p>
             <Link href="/dashboard/jobs/new"
               className="inline-flex items-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-lg bg-[#4F8EF7]">
               <Plus size={16} /> Mark First Job Done
@@ -70,7 +68,7 @@ export default async function JobsPage() {
               <div key={job.id} className="grid grid-cols-5 gap-4 px-6 py-4 items-center border-b border-[#DDE1EC] last:border-0 hover:bg-gray-50">
                 <div>
                   <div className="text-sm font-semibold text-[#0E1117] truncate">
-                    {job.customers?.full_name || '—'}
+                    {job.customers?.full_name || job.customers?.name || '—'}
                   </div>
                   {job.crew_member && <div className="text-xs text-[#6B7490]">👷 {job.crew_member}</div>}
                 </div>
