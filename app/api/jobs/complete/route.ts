@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/server'
+import {
+  sendSMS,
+  sendEmail,
+  buildSMSReceipt,
+  buildEmailReceipt,
+} from '@/lib/notifications'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2026-04-22.dahlia',
+})
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'customerId and services required' }, { status: 400 })
     }
 
-    const supabase = createAdminClient()
+    const supabase = await createAdminClient()
 
     // Get customer with business
     const { data: customer, error: custErr } = await supabase
@@ -36,6 +44,7 @@ export async function POST(request: Request) {
 
     const businessName = (customer.service_companies as any)?.name || 'Servaia'
     const businessId   = (customer.service_companies as any)?.id
+    const customerName = customer.full_name || customer.name || 'Valued Customer'
 
     // Calculate total
     const totalCents = services.reduce(
@@ -47,6 +56,7 @@ export async function POST(request: Request) {
     }
 
     const serviceNames = services.map((s: any) => s.name).join(', ')
+    const totalDollars = (totalCents / 100).toFixed(2)
 
     // Charge the card
     const paymentIntent = await stripe.paymentIntents.create({
@@ -73,8 +83,6 @@ export async function POST(request: Request) {
       }, { status: 402 })
     }
 
-    const totalDollars = (totalCents / 100).toFixed(2)
-
     // Save job to Supabase
     const { data: job, error: jobErr } = await supabase
       .from('payments')
@@ -83,6 +91,7 @@ export async function POST(request: Request) {
         customer_id:      customerId,
         stripe_charge_id: paymentIntent.id,
         amount:           parseFloat(totalDollars),
+        total_amount:     totalCents,
         payment_status:   'charged',
         crew_member:      crewMember || null,
         notes:            notes || null,
@@ -102,19 +111,82 @@ export async function POST(request: Request) {
       const lineItems = services.map((s: any) => ({
         job_id:        job.id,
         service_id:    s.serviceId || null,
+        service_name:  s.name,
         name:          s.name,
         price_charged: parseFloat(s.price),
+        quantity:      1,
+        unit_price:    parseFloat(s.price),
         is_custom:     s.isCustom || false,
       }))
 
       await supabase.from('job_services').insert(lineItems)
     }
 
+    // ── Fire notifications (non-blocking — don't fail the job if these error) ──
+
+    let smsSent   = false
+    let emailSent = false
+
+    const completedAt = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day:   'numeric',
+      year:  'numeric',
+    })
+
+    // SMS receipt
+    if (customer.phone) {
+      const smsBody = buildSMSReceipt({
+        customerName,
+        businessName,
+        serviceNames,
+        totalDollars,
+        jobId: job?.id || '',
+      })
+
+      const smsResult = await sendSMS({ to: customer.phone, body: smsBody })
+      smsSent = smsResult.success
+    }
+
+    // Email receipt
+    if (customer.email) {
+      const serviceLines = services.map((s: any) => ({
+        name:  s.name,
+        price: parseFloat(s.price).toFixed(2),
+      }))
+
+      const emailHtml = buildEmailReceipt({
+        customerName,
+        businessName,
+        serviceLines,
+        totalDollars,
+        jobId:       job?.id || '',
+        completedAt,
+      })
+
+      const emailResult = await sendEmail({
+        to:      customer.email,
+        subject: `Your receipt from ${businessName} — $${totalDollars}`,
+        html:    emailHtml,
+      })
+
+      emailSent = emailResult.success
+    }
+
+    // Update job with notification status
+    if (job) {
+      await supabase
+        .from('payments')
+        .update({ sms_sent: smsSent, email_sent: emailSent })
+        .eq('id', job.id)
+    }
+
     return NextResponse.json({
-      success:  true,
-      jobId:    job?.id,
-      chargeId: paymentIntent.id,
-      amount:   totalDollars,
+      success:   true,
+      jobId:     job?.id,
+      chargeId:  paymentIntent.id,
+      amount:    totalDollars,
+      smsSent,
+      emailSent,
     })
 
   } catch (err: any) {
