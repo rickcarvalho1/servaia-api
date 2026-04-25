@@ -91,7 +91,7 @@ export async function POST(request: Request) {
         customer_id:      customerId,
         stripe_charge_id: paymentIntent.id,
         amount:           parseFloat(totalDollars),
-        total_amount:     totalCents,
+        
         payment_status:   'charged',
         crew_member:      crewMember || null,
         notes:            notes || null,
