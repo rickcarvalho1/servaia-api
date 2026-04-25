@@ -40,7 +40,7 @@ export default function NewJobPage() {
       setCrewMember(member.full_name)
 
       const [{ data: custs }, { data: svcs }] = await Promise.all([
-        supabase.from('customers').select('*').eq('business_id', bizId).eq('card_status', 'authorized').order('full_name'),
+        supabase.from('customers').select('*').eq('business_id', bizId).eq('card_status', 'active').order('full_name'),
         supabase.from('services').select('*').eq('business_id', bizId).eq('active', true).order('sort_order'),
       ])
 
