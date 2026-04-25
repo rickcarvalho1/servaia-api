@@ -109,15 +109,12 @@ export async function POST(request: Request) {
     // Save line items
     if (job) {
       const lineItems = services.map((s: any) => ({
-        job_id:        job.id,
-        service_id:    s.serviceId || null,
-        service_name:  s.name,
-        name:          s.name,
-        price_charged: parseFloat(s.price),
-        quantity:      1,
-        unit_price:    parseFloat(s.price),
-        is_custom:     s.isCustom || false,
-      }))
+  job_id:        job.id,
+  service_id:    s.serviceId || null,
+  name:          s.name,
+  price_charged: parseFloat(s.price),
+  is_custom:     s.isCustom || false,
+}))
 
       await supabase.from('job_services').insert(lineItems)
     }
