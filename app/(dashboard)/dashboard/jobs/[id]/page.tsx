@@ -117,4 +117,3 @@ export default async function JobDetailPage({
     </div>
   )
 }
-'@ | Set-Content "app\(dashboard)\dashboard\jobs\[id]\page.tsx" -Encoding UTF8
