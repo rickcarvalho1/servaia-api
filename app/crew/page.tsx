@@ -107,18 +107,22 @@ export default function CrewPage() {
     setUploadingPhoto(true);
 
     try {
-      let lat: number | null = null;
-      let lng: number | null = null;
+     let lat: number | null = null;
+let lng: number | null = null;
 
-      try {
-        await new Promise<void>((resolve) => {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => { lat = pos.coords.latitude; lng = pos.coords.longitude; resolve(); },
-            () => resolve(),
-            { timeout: 5000 }
-          );
-        });
-      } catch {}
+try {
+  const position = await new Promise<GeolocationPosition | null>((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve(pos),
+      () => resolve(null),
+      { timeout: 5000 }
+    );
+  });
+  if (position) {
+    lat = position.coords.latitude;
+    lng = position.coords.longitude;
+  }
+} catch {}
 
       const fd = new FormData();
       fd.append("file", file);
