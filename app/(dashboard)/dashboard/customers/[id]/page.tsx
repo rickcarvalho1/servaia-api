@@ -355,11 +355,12 @@ export default function CustomerDetailPage() {
                 {customer.address && <p>{customer.address}</p>}
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                Customer since{" "}
-                {new Date(customer.created_at).toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
+                {customer.created_at
+  ? new Date(customer.created_at).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    })
+  : "—"}
               </p>
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">
@@ -522,11 +523,13 @@ export default function CustomerDetailPage() {
                       {job.job_services?.map((s) => s.name).join(", ") || "Service"}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(job.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      {job.created_at
+  ? new Date(job.created_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  : "—"}
                     </p>
                   </div>
                   <p className="text-sm font-semibold text-[#0E1117]">
