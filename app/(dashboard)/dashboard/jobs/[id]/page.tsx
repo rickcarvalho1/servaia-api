@@ -177,28 +177,37 @@ export default async function JobDetailPage({
       </div>
 
       {/* Photos */}
-      {photosWithUrls.length > 0 && (
-        <div className="rounded-2xl border border-[#DDE1EC] bg-white p-6 shadow-sm">
-          <h2 className="font-semibold text-[#0E1117] mb-4">
-            Job Photos ({photosWithUrls.length})
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {photosWithUrls.map((p: any) => (
-              <div key={p.id} className="space-y-1">
-                <a href={p.url} target="_blank" rel="noopener noreferrer">
-                  <img
-                    src={p.url}
-                    alt="Job photo"
-                    className="w-full aspect-square object-cover rounded-xl border border-[#DDE1EC] hover:opacity-90 transition"
-                  />
-                </a>
-                <div className="text-xs text-gray-400 space-y-0.5 px-0.5">
-                  {p.taken_at && (
-                    <p>
-                      {new Date(p.taken_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{' '}
-                      {new Date(p.taken_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                    </p>
-                  )}
+{photosWithUrls.length > 0 && (
+  <div className="rounded-2xl border border-[#DDE1EC] bg-white p-6 shadow-sm">
+    <h2 className="font-semibold text-[#0E1117] mb-4">
+      Job Photos ({photosWithUrls.length})
+    </h2>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {photosWithUrls.map((p: any) => (
+        <div key={p.id} className="space-y-1">
+          <img
+            src={p.url}
+            alt="Job photo"
+            className="w-full aspect-square object-cover rounded-xl border border-[#DDE1EC]"
+          />
+          <div className="text-xs text-gray-400 space-y-0.5 px-0.5">
+            {p.taken_at && (
+              <p>
+                {new Date(p.taken_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {' '}
+                {new Date(p.taken_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              </p>
+            )}
+            {p.gps_lat && p.gps_lng && (
+              <p>📍 {Number(p.gps_lat).toFixed(4)}, {Number(p.gps_lng).toFixed(4)}</p>
+            )}
+            {p.crew_member && <p>👷 {p.crew_member}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
                   {p.gps_lat && p.gps_lng && (
                     
                       {p.gps_lat && p.gps_lng && (
