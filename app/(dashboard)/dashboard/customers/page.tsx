@@ -23,9 +23,9 @@ export default async function CustomersPage() {
     .eq('business_id', businessId)
     .order('created_at', { ascending: false })
 
-  const authorized = customers?.filter(c => c.card_status === 'authorized').length || 0
-  const pending    = customers?.filter(c => c.card_status === 'pending').length || 0
-  const failed     = customers?.filter(c => c.card_status === 'failed').length || 0
+  const active  = customers?.filter(c => c.card_status === 'active').length || 0
+  const pending = customers?.filter(c => c.card_status === 'pending').length || 0
+  const failed  = customers?.filter(c => c.card_status === 'failed').length || 0
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -36,7 +36,7 @@ export default async function CustomersPage() {
             Customers
           </h1>
           <p className="text-sm mt-1 text-[#6B7490]">
-            {customers?.length || 0} total · {authorized} with card on file
+            {customers?.length || 0} total · {active} with card on file
           </p>
         </div>
         <Link href="/dashboard/customers/new"
@@ -47,7 +47,7 @@ export default async function CustomersPage() {
 
       <div className="flex gap-3 mb-6">
         <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[rgba(61,191,127,0.1)] text-[#3DBF7F] border border-[rgba(61,191,127,0.2)]">
-          {authorized} Card on file
+          {active} Card on file
         </div>
         <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[rgba(232,160,32,0.1)] text-[#E8A020] border border-[rgba(232,160,32,0.2)]">
           {pending} Pending auth
@@ -76,12 +76,14 @@ export default async function CustomersPage() {
               <Link key={customer.id} href={`/dashboard/customers/${customer.id}`}
                 className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors border-b border-[#DDE1EC] last:border-0">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[rgba(79,142,247,0.1)] text-[#4F8EF7]">
-                  {customer.full_name?.charAt(0).toUpperCase()}
+                  {(customer.full_name || customer.name)?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-semibold text-[#0E1117]">{customer.full_name}</span>
-                    {customer.card_status === 'authorized' && (
+                    <span className="text-sm font-semibold text-[#0E1117]">
+                      {customer.full_name || customer.name}
+                    </span>
+                    {customer.card_status === 'active' && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(61,191,127,0.1)] text-[#3DBF7F]">
                         <CheckCircle2 size={10} /> Card on file
                       </span>
