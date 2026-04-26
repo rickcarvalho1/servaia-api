@@ -201,7 +201,13 @@ export default async function JobDetailPage({
                   )}
                   {p.gps_lat && p.gps_lng && (
                     
-                      href={`https://maps.google.com/?q=${p.gps_lat},${p.gps_lng}`}
+                      href={"https://maps.google.com/?q=" + p.gps_lat + "," + p.gps_lng}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="flex items-center gap-1 text-[#4F8EF7] hover:underline"
+>
+  📍 View on map
+</a>
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-[#4F8EF7] hover:underline"
