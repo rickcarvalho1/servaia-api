@@ -92,7 +92,7 @@ export default function CrewPage() {
       .lte("scheduled_for", todayEnd.toISOString())
       .order("scheduled_for", { ascending: true });
 
-    setJobs(data ?? []);
+    setJobs((data ?? []) as any as Job[]);
     setLoading(false);
   }, [supabase]);
 
