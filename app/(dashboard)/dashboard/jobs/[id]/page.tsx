@@ -15,7 +15,7 @@ export default async function JobDetailPage({
   const { data: job, error } = await supabase
     .from('payments')
     .select('*, customers(id, full_name, name, email, phone, address), job_services(id, name, price_charged, is_custom), photos(id, storage_path, taken_at, crew_member, gps_lat, gps_lng)')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !job) notFound()
