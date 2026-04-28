@@ -14,17 +14,27 @@ export default async function JobDetailPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: job, error } = await supabase
+const { data: job, error } = await supabase
     .from('payments')
-    .select('*, customers(id, full_name, name, email, phone, address), job_services!job_services_job_id_fkey(id, name, price_charged, is_custom), photos(id, storage_path, taken_at, crew_member, gps_lat, gps_lng)')
+    .select('*, customers(id, full_name, name, email, phone, address), photos(id, storage_path, taken_at, crew_member, gps_lat, gps_lng)')
     .eq('id', id)
     .single()
 
   if (error || !job) notFound()
 
+  const { data: services } = await supabase
+    .from('job_services')
+    .select('id, name, price_charged, is_custom')
+    .eq('job_id', id)
+
+  const { data: photos } = await supabase
+    .from('photos')
+    .select('id, storage_path, taken_at, crew_member, gps_lat, gps_lng')
+    .eq('job_id', id)
+
   const customer = job.customers as any
-  const services = (job.job_services as any[]) ?? []
-  const photos = (job.photos as any[]) ?? []
+  const servicesList = services ?? []
+  const photosList = photos ?? []
   const customerName = customer?.full_name || customer?.name || 'Unknown'
   const isScheduled = job.job_status === 'scheduled'
   const isCompleted = job.job_status === 'completed'
