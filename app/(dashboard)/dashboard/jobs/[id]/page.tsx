@@ -6,8 +6,10 @@ import { CheckCircle2, XCircle, Calendar } from 'lucide-react'
 export default async function JobDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -47,9 +49,21 @@ export default async function JobDetailPage({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-2xl font-bold text-[#0E1117]">{customerName}</h1>
-              {isCompleted && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(61,191,127,0.1)] text-[#3DBF7F]"><CheckCircle2 size={10} /> Completed</span>}
-              {isScheduled && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(232,160,32,0.1)] text-[#E8A020]"><Calendar size={10} /> Scheduled</span>}
-              {job.payment_status === 'failed' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(224,82,82,0.1)] text-[#E05252]"><XCircle size={10} /> Failed</span>}
+              {isCompleted && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(61,191,127,0.1)] text-[#3DBF7F]">
+                  <CheckCircle2 size={10} /> Completed
+                </span>
+              )}
+              {isScheduled && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(232,160,32,0.1)] text-[#E8A020]">
+                  <Calendar size={10} /> Scheduled
+                </span>
+              )}
+              {job.payment_status === 'failed' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(224,82,82,0.1)] text-[#E05252]">
+                  <XCircle size={10} /> Failed
+                </span>
+              )}
             </div>
             <div className="text-sm text-gray-500 space-y-0.5">
               {customer?.email && <p>{customer.email}</p>}
@@ -58,15 +72,44 @@ export default async function JobDetailPage({
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-2xl font-bold text-[#0E1117] font-mono">${isCompleted ? Number(job.amount).toFixed(2) : serviceTotal.toFixed(2)}</p>
-            <p className={"text-xs font-medium " + (isCompleted ? "text-[#3DBF7F]" : "text-[#E8A020]")}>{isCompleted ? "Charged" : "Pending"}</p>
+            <p className="text-2xl font-bold text-[#0E1117] font-mono">
+              ${isCompleted ? Number(job.amount).toFixed(2) : serviceTotal.toFixed(2)}
+            </p>
+            <p className={"text-xs font-medium " + (isCompleted ? "text-[#3DBF7F]" : "text-[#E8A020]")}>
+              {isCompleted ? "Charged" : "Pending"}
+            </p>
           </div>
         </div>
+
         <div className="mt-4 pt-4 border-t border-[#DDE1EC] grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {job.completed_at && <div><p className="text-xs text-gray-400 mb-0.5">Completed</p><p className="text-sm text-[#0E1117]">{new Date(job.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p></div>}
-          {job.scheduled_for && <div><p className="text-xs text-gray-400 mb-0.5">Scheduled for</p><p className="text-sm text-[#0E1117]">{new Date(job.scheduled_for).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p></div>}
-          {(job.crew_member || job.assigned_to) && <div><p className="text-xs text-gray-400 mb-0.5">Crew</p><p className="text-sm text-[#0E1117]">{job.crew_member || job.assigned_to}</p></div>}
-          {job.stripe_charge_id && <div><p className="text-xs text-gray-400 mb-0.5">Charge ID</p><p className="text-xs font-mono text-gray-500 truncate">{job.stripe_charge_id}</p></div>}
+          {job.completed_at && (
+            <div>
+              <p className="text-xs text-gray-400 mb-0.5">Completed</p>
+              <p className="text-sm text-[#0E1117]">
+                {new Date(job.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+          )}
+          {job.scheduled_for && (
+            <div>
+              <p className="text-xs text-gray-400 mb-0.5">Scheduled for</p>
+              <p className="text-sm text-[#0E1117]">
+                {new Date(job.scheduled_for).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+          )}
+          {(job.crew_member || job.assigned_to) && (
+            <div>
+              <p className="text-xs text-gray-400 mb-0.5">Crew</p>
+              <p className="text-sm text-[#0E1117]">{job.crew_member || job.assigned_to}</p>
+            </div>
+          )}
+          {job.stripe_charge_id && (
+            <div>
+              <p className="text-xs text-gray-400 mb-0.5">Charge ID</p>
+              <p className="text-xs font-mono text-gray-500 truncate">{job.stripe_charge_id}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -76,16 +119,25 @@ export default async function JobDetailPage({
           <div key={s.id} className="flex items-center justify-between py-3 border-b border-[#DDE1EC] last:border-0">
             <div className="flex items-center gap-2">
               <span className="text-sm text-[#0E1117]">{s.name}</span>
-              {s.is_custom && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">Custom</span>}
+              {s.is_custom && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">Custom</span>
+              )}
             </div>
-            <span className="text-sm font-mono font-semibold text-[#0E1117]">${Number(s.price_charged).toFixed(2)}</span>
+            <span className="text-sm font-mono font-semibold text-[#0E1117]">
+              ${Number(s.price_charged).toFixed(2)}
+            </span>
           </div>
         ))}
         <div className="flex items-center justify-between pt-3">
           <span className="text-sm font-bold text-[#0E1117]">Total</span>
           <span className="text-sm font-bold font-mono text-[#3DBF7F]">${serviceTotal.toFixed(2)}</span>
         </div>
-        {job.notes && <div className="mt-4 pt-4 border-t border-[#DDE1EC]"><p className="text-xs text-gray-400 mb-1">Notes</p><p className="text-sm text-gray-600">{job.notes}</p></div>}
+        {job.notes && (
+          <div className="mt-4 pt-4 border-t border-[#DDE1EC]">
+            <p className="text-xs text-gray-400 mb-1">Notes</p>
+            <p className="text-sm text-gray-600">{job.notes}</p>
+          </div>
+        )}
       </div>
 
       {photosWithUrls.length > 0 && (
@@ -94,9 +146,15 @@ export default async function JobDetailPage({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {photosWithUrls.map((p: any) => (
               <div key={p.id} className="space-y-1">
-                <img src={p.url} alt="Job photo" className="w-full aspect-square object-cover rounded-xl border border-[#DDE1EC]" />
+                <img
+                  src={p.url}
+                  alt="Job photo"
+                  className="w-full aspect-square object-cover rounded-xl border border-[#DDE1EC]"
+                />
                 <div className="text-xs text-gray-400 px-0.5">
-                  {p.taken_at && <p>{new Date(p.taken_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>}
+                  {p.taken_at && (
+                    <p>{new Date(p.taken_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                  )}
                   {p.gps_lat && p.gps_lng && <p>GPS captured</p>}
                   {p.crew_member && <p>{p.crew_member}</p>}
                 </div>
@@ -107,7 +165,10 @@ export default async function JobDetailPage({
       )}
 
       <div className="rounded-2xl border border-[#DDE1EC] bg-white p-4 shadow-sm">
-        <Link href={"/dashboard/customers/" + customer?.id} className="flex items-center justify-between text-sm text-[#0E1117] hover:text-[#4F8EF7] transition">
+        <Link
+          href={"/dashboard/customers/" + customer?.id}
+          className="flex items-center justify-between text-sm text-[#0E1117] hover:text-[#4F8EF7] transition"
+        >
           <span>View full customer profile</span>
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
