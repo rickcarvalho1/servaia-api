@@ -34,6 +34,8 @@ export default async function JobDetailPage({
 
   const customer = job.customers as any
   const serviceList = services ?? []
+console.log('DEBUG job id:', id)
+console.log('DEBUG services:', JSON.stringify(services))
   const photoList = photos ?? []
   const customerName = customer?.full_name || customer?.name || 'Unknown'
   const isScheduled = job.job_status === 'scheduled'
