@@ -66,9 +66,9 @@ export default function CrewPage() {
     setCrewMember(member.full_name || "");
 
     const now = new Date();
-const offset = now.getTimezoneOffset() * 60000;
-const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const offset = now.getTimezoneOffset() * 60000;
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
     const { data } = await supabase
       .from("payments")
