@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Servaia — Get Paid the Moment the Job's Done</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #0E1117;
+        color: #FFFFFF;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #0E1117;
+        color: #FFFFFF;
+        line-height: 1.6;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      .nav {
+        position: sticky;
+        top: 0;
+        background: rgba(14, 17, 23, 0.95);
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        z-index: 10;
+      }
+
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 0;
+      }
+
+      .brand {
+        font-size: 1.5rem;
+        font-weight: 800;
+      }
+
+      .brand .gold {
+        color: #C9A84C;
+      }
+
+      .nav-links {
+        display: none;
+        gap: 28px;
+      }
+
+      .nav-links a {
+        color: #CBD5E1;
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }
+
+      .nav-links a:hover {
+        color: #FFFFFF;
+      }
+
+      .button-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #C9A84C;
+        color: #0E1117;
+        padding: 14px 26px;
+        border-radius: 999px;
+        font-weight: 700;
+        transition: background 0.2s ease;
+      }
+
+      .button-primary:hover {
+        background: rgba(201, 168, 76, 0.88);
+      }
+
+      .hero {
+        padding: 88px 0 80px;
+        text-align: center;
+      }
+
+      .hero h1 {
+        margin: 0 auto;
+        max-width: 860px;
+        font-size: clamp(3rem, 5vw, 4.75rem);
+        line-height: 1.02;
+        font-weight: 900;
+      }
+
+      .hero p {
+        margin: 24px auto 0;
+        max-width: 760px;
+        color: #94A3B8;
+        font-size: 1.125rem;
+      }
+
+      .hero .hero-actions {
+        margin-top: 34px;
+      }
+
+      .hero .subtext {
+        margin-top: 16px;
+        color: #94A3B8;
+        font-size: 0.95rem;
+      }
+
+      .section {
+        padding: 80px 0;
+      }
+
+      .section-alt {
+        background: #131a27;
+      }
+
+      .section-title {
+        text-align: center;
+        margin-bottom: 48px;
+        font-size: clamp(2.35rem, 4vw, 3.5rem);
+        font-weight: 800;
+        line-height: 1.04;
+      }
+
+      .grid {
+        display: grid;
+        gap: 24px;
+      }
+
+      .feature-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      .feature-card {
+        background: #0E1117;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 24px;
+        padding: 28px;
+      }
+
+      .feature-badge {
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 16px;
+        background: #C9A84C;
+        color: #0E1117;
+        font-weight: 800;
+        font-size: 1.1rem;
+      }
+
+      .feature-card h3 {
+        margin: 18px 0 10px;
+        font-size: 1.4rem;
+      }
+
+      .feature-card p {
+        margin: 0;
+        color: #94A3B8;
+      }
+
+      .industry-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      }
+
+      .industry-item {
+        padding: 16px;
+        border-radius: 18px;
+        background: #131827;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        text-align: center;
+        transition: border-color 0.2s ease;
+      }
+
+      .industry-item:hover {
+        border-color: #C9A84C;
+      }
+
+      .industry-item p {
+        margin: 0;
+        font-weight: 600;
+      }
+
+      .pricing-card {
+        max-width: 760px;
+        margin: 0 auto;
+        background: #0E1117;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 32px;
+        padding: 40px;
+      }
+
+      .pricing-card .price {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 16px;
+        font-weight: 900;
+      }
+
+      .pricing-card .price .dollar {
+        font-size: 4.5rem;
+        color: #C9A84C;
+        margin: 0;
+      }
+
+      .pricing-card .price .per-month {
+        color: #94A3B8;
+        font-size: 1.4rem;
+      }
+
+      .pricing-card p {
+        color: #94A3B8;
+        text-align: center;
+      }
+
+      .pricing-list {
+        list-style: none;
+        padding: 0;
+        margin: 32px 0 0;
+        display: grid;
+        gap: 18px;
+      }
+
+      .pricing-list li {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #FFFFFF;
+      }
+
+      .pricing-list li::before {
+        content: '✓';
+        color: #C9A84C;
+        font-weight: 700;
+      }
+
+      .pricing-card .cta {
+        margin-top: 32px;
+        text-align: center;
+      }
+
+      .footer {
+        padding: 48px 0;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+      }
+
+      .footer-inner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 22px;
+      }
+
+      .footer-links a {
+        color: #94A3B8;
+      }
+
+      .footer p {
+        margin: 0;
+        color: #94A3B8;
+      }
+
+      @media (min-width: 768px) {
+        .nav-links {
+          display: flex;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="container nav-inner">
+        <div class="brand"><span class="gold">S</span>ervaia</div>
+        <div class="nav-links">
+          <a href="#how-it-works">How It Works</a>
+          <a href="#pricing">Pricing</a>
+          <a href="https://app.servaiapay.com/login">Login</a>
+        </div>
+        <a class="button-primary" href="https://app.servaiapay.com/get-started">Start Free Trial</a>
+      </div>
+    </nav>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <h1>Done with the wait.</h1>
+          <p>Your crew marks the job done. The customer's card charges automatically. Money in your account — no invoice, no follow-up, no waiting.</p>
+          <div class="hero-actions">
+            <a class="button-primary" href="https://app.servaiapay.com/get-started">Start Your Free 30-Day Trial →</a>
+            <p class="subtext">No credit card required. Cancel anytime.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="section section-alt">
+        <div class="container">
+          <h2 class="section-title">How It Works</h2>
+          <div class="grid feature-grid">
+            <div class="feature-card">
+              <div class="feature-badge">1</div>
+              <h3>Customer Saves Card</h3>
+              <p>Your customer enters their card once. No invoices. No payment requests.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-badge">2</div>
+              <h3>Crew Marks Job Done</h3>
+              <p>When the job is complete, your team marks it in the app.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-badge">3</div>
+              <h3>You Get Paid Instantly</h3>
+              <p>The charge goes through automatically. Money in your account same day.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <h2 class="section-title">Built for Your Industry</h2>
+          <div class="grid industry-grid">
+            <div class="industry-item"><p>HVAC</p></div>
+            <div class="industry-item"><p>Plumbing</p></div>
+            <div class="industry-item"><p>Electrical</p></div>
+            <div class="industry-item"><p>Landscaping</p></div>
+            <div class="industry-item"><p>Pool Cleaning</p></div>
+            <div class="industry-item"><p>Handyman</p></div>
+            <div class="industry-item"><p>Pressure Washing</p></div>
+            <div class="industry-item"><p>Window Cleaning</p></div>
+            <div class="industry-item"><p>Gutter Cleaning</p></div>
+            <div class="industry-item"><p>Roofing</p></div>
+            <div class="industry-item"><p>Pest Control</p></div>
+            <div class="industry-item"><p>Carpet Cleaning</p></div>
+            <div class="industry-item"><p>House Cleaning</p></div>
+            <div class="industry-item"><p>Junk Removal</p></div>
+            <div class="industry-item"><p>Tree Service</p></div>
+            <div class="industry-item"><p>Painting</p></div>
+            <div class="industry-item"><p>Appliance Repair</p></div>
+            <div class="industry-item"><p>Garage Door Service</p></div>
+            <div class="industry-item"><p>Irrigation</p></div>
+            <div class="industry-item"><p>Snow Removal</p></div>
+            <div class="industry-item"><p>Auto Detailing</p></div>
+            <div class="industry-item"><p>Moving Services</p></div>
+            <div class="industry-item"><p>Locksmith</p></div>
+            <div class="industry-item"><p>Hardscaping</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" class="section section-alt">
+        <div class="container">
+          <h2 class="section-title">Simple pricing. No surprises.</h2>
+          <div class="pricing-card">
+            <div class="price">
+              <p class="dollar">$49</p>
+              <p class="per-month">/month</p>
+            </div>
+            <p>Plus 3.5% per transaction</p>
+            <ul class="pricing-list">
+              <li>30-day free trial</li>
+              <li>No credit card required</li>
+              <li>Cancel anytime</li>
+              <li>No contracts</li>
+              <li>Lock in $49/month forever</li>
+            </ul>
+            <div class="cta">
+              <a class="button-primary" href="https://app.servaiapay.com/get-started">Start Your Free 30-Day Trial</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div class="brand"><span class="gold">S</span>ervaia</div>
+        <div class="footer-links">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </div>
+        <p>© 2026 Servaia</p>
+      </div>
+    </footer>
+  </body>
+</html>
