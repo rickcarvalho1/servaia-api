@@ -24,15 +24,37 @@ export async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { pathname } = request.nextUrl
+  const { pathname, hostname } = request.nextUrl
 
-  // Only allow /login, /signup, /authorize as public routes
-  // Everything else requires authentication
-  if (!pathname.startsWith('/login') &&
-      !pathname.startsWith('/signup') &&
-      !pathname.startsWith('/authorize') &&
-      !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Check hostname to determine routing rules
+  const isAppSubdomain = hostname.startsWith('app.')
+  const isMarketingDomain = hostname === 'servaiapay.com' || hostname === 'www.servaiapay.com'
+
+  if (isAppSubdomain) {
+    // app.servaiapay.com - protect all routes except auth-related ones
+    const isPublicRoute = pathname.startsWith('/login') ||
+                         pathname.startsWith('/signup') ||
+                         pathname.startsWith('/authorize') ||
+                         pathname.startsWith('/api/auth') ||
+                         pathname === '/api/stripe/connect/callback'
+
+    if (!isPublicRoute && !user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+  } else if (isMarketingDomain) {
+    // servaiapay.com or www.servaiapay.com - allow marketing pages, protect dashboard/admin
+    const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
+
+    if (isProtectedRoute && !user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+  } else {
+    // For any other hostname, default to protecting dashboard/admin routes
+    const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
+
+    if (isProtectedRoute && !user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
   }
 
   // Redirect authenticated users away from auth pages
