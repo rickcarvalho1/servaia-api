@@ -95,6 +95,8 @@ export default function GetStartedForm() {
         industry,
         trade: industry,
         status: 'lead',
+        trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        subscription_status: 'trial',
       })
 
     if (companyError) {
@@ -106,7 +108,7 @@ export default function GetStartedForm() {
     await fetch('/api/onboarding/welcome', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name: ownerName, company: companyName }),
+      body: JSON.stringify({ email, name: ownerName, company: companyName, phone }),
     })
 
     router.push('/dashboard')

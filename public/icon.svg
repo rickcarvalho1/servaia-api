@@ -1,0 +1,7 @@
+<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Navy Square -->
+  <rect width="60" height="60" rx="8" fill="#0E1117"/>
+  
+  <!-- Gold S -->
+  <text x="30" y="40" font-family="serif" font-size="42" font-weight="bold" fill="#E8B84B" text-anchor="middle" dominant-baseline="middle">S</text>
+</svg>

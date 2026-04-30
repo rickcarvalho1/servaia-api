@@ -46,6 +46,22 @@ export async function POST(req: NextRequest) {
       break;
     }
 
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const companyId = session.metadata?.company_id;
+
+      if (companyId && session.mode === 'subscription') {
+        // Activate subscription and set subscription status to active
+        await supabase
+          .from('service_companies')
+          .update({
+            subscription_status: 'active',
+          })
+          .eq('id', companyId);
+      }
+      break;
+    }
+
     default:
       break;
   }

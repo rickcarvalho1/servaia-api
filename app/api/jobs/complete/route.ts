@@ -30,12 +30,25 @@ export async function POST(request: Request) {
     // Get customer with business
     const { data: customer, error: custErr } = await supabase
       .from('customers')
-      .select('*, service_companies(id, name, surcharge_enabled, surcharge_percentage, stripe_account_id)')
+      .select('*, service_companies(id, name, surcharge_enabled, surcharge_percentage, stripe_account_id, trial_ends_at, subscription_status)')
       .eq('id', customerId)
       .single()
 
     if (custErr || !customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+    }
+
+    // Check trial and subscription status
+    const company = (customer.service_companies as any)
+    const trialEndsAt = company.trial_ends_at ? new Date(company.trial_ends_at) : null
+    const trialEnded = trialEndsAt && trialEndsAt.getTime() < Date.now()
+    const isSubscriptionActive = company.subscription_status === 'active'
+
+    if (trialEnded && !isSubscriptionActive) {
+      return NextResponse.json({
+        error: 'Your trial has ended. Please subscribe to continue using Servaia.',
+        code: 'TRIAL_EXPIRED',
+      }, { status: 402 })
     }
 
     if (!customer.stripe_customer_id || !customer.stripe_payment_method) {

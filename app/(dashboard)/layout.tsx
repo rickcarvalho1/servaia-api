@@ -10,7 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: member } = await supabase
     .from('team_members')
-    .select('*, service_companies(id, name, company_name, logo_url, trade, stripe_connect_status)')
+    .select('*, service_companies(id, name, company_name, logo_url, trade, stripe_connect_status, trial_ends_at, subscription_status)')
     .eq('user_id', user.id)
     .eq('active', true)
     .single()
@@ -19,6 +19,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const stripeStatus = member.service_companies.stripe_connect_status || 'pending'
   const stripeConnected = stripeStatus === 'active'
+
+  const trialEndsAt = member.service_companies.trial_ends_at ? new Date(member.service_companies.trial_ends_at) : null
+  const daysUntilTrialEnd = trialEndsAt
+    ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null
+  const trialEnded = daysUntilTrialEnd !== null && daysUntilTrialEnd < 0
+  const trialEndingSoon = daysUntilTrialEnd !== null && daysUntilTrialEnd <= 5 && daysUntilTrialEnd > 0
 
   const appUser = {
     id:           user.id,
@@ -40,6 +47,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <p className="max-w-4xl mx-auto text-sm">
               Connect your Stripe account to start collecting payments.
               <a href="/dashboard/settings/stripe-connect" className="font-semibold underline ml-2">Connect Stripe</a>
+            </p>
+          </div>
+        )}
+        {trialEndingSoon && (
+          <div className="border-b border-warn/30 bg-warn/10 text-warn px-6 py-4">
+            <p className="max-w-4xl mx-auto text-sm font-semibold">
+              Your trial ends in {daysUntilTrialEnd} days. Subscribe now to keep using Servaia.
+              <a href="/dashboard/billing" className="font-bold underline ml-2">View Billing</a>
+            </p>
+          </div>
+        )}
+        {trialEnded && member.service_companies.subscription_status !== 'active' && (
+          <div className="border-b border-danger/30 bg-danger/10 text-danger px-6 py-4">
+            <p className="max-w-4xl mx-auto text-sm font-semibold">
+              Your trial has ended. Subscribe to continue using Servaia.
+              <a href="/dashboard/billing" className="font-bold underline ml-2">Subscribe Now</a>
             </p>
           </div>
         )}

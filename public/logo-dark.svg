@@ -1,0 +1,8 @@
+<svg viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Navy S Icon -->
+  <circle cx="30" cy="30" r="28" fill="#0E1117"/>
+  <text x="30" y="42" font-family="serif" font-size="40" font-weight="bold" fill="#E8B84B" text-anchor="middle" dominant-baseline="middle">S</text>
+  
+  <!-- Servaia Wordmark -->
+  <text x="65" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="600" fill="#0E1117">Servaia</text>
+</svg>
