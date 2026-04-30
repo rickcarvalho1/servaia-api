@@ -26,8 +26,12 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Only protect dashboard and admin routes
-  if ((pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) && !user) {
+  // Only allow /login, /signup, /authorize as public routes
+  // Everything else requires authentication
+  if (!pathname.startsWith('/login') &&
+      !pathname.startsWith('/signup') &&
+      !pathname.startsWith('/authorize') &&
+      !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -36,24 +40,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Let root path show marketing page for everyone
-  // No redirect logic needed here
-
   return supabaseResponse
 }
 
 export const config = {
   matcher: [
-    '/',
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/get-started',
-    '/privacy',
-    '/terms',
-    '/login',
-    '/signup',
-    '/authorize/:path*',
-    '/api/stripe/connect/callback',
-    '/api/onboarding/welcome'
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
   ],
 }
