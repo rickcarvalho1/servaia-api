@@ -24,37 +24,18 @@ export async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { pathname, hostname } = request.nextUrl
+  const { pathname } = request.nextUrl
 
-  // Check hostname to determine routing rules
-  const isAppSubdomain = hostname.startsWith('app.')
-  const isMarketingDomain = hostname === 'servaiapay.com' || hostname === 'www.servaiapay.com'
+  // Public routes - no auth needed
+  const publicRoutes = ['/', '/get-started', '/privacy', '/terms', '/login', '/signup', '/authorize', '/api', '/crew']
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
-  if (isAppSubdomain) {
-    // app.servaiapay.com - protect all routes except auth-related ones
-    const isPublicRoute = pathname.startsWith('/login') ||
-                         pathname.startsWith('/signup') ||
-                         pathname.startsWith('/authorize') ||
-                         pathname.startsWith('/api/auth') ||
-                         pathname === '/api/stripe/connect/callback'
+  // Protected routes - require auth
+  const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
 
-    if (!isPublicRoute && !user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-  } else if (isMarketingDomain) {
-    // servaiapay.com or www.servaiapay.com - allow marketing pages, protect dashboard/admin
-    const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
-
-    if (isProtectedRoute && !user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-  } else {
-    // For any other hostname, default to protecting dashboard/admin routes
-    const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
-
-    if (isProtectedRoute && !user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+  // Redirect to login if accessing protected route without auth
+  if (isProtectedRoute && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // Redirect authenticated users away from auth pages
