@@ -12,6 +12,7 @@ export interface Business {
   owner_email: string
   owner_phone: string
   trade: string | null
+  industry: string | null
   resend_from_domain: string | null
   stripe_account_id: string | null
   status: BusinessStatus

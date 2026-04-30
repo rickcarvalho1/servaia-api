@@ -35,7 +35,7 @@ export default async function CompanyDashboardPage({ params }: PageProps) {
     { data: pendingCards },
   ] = await Promise.all([
     supabase.from('customers').select('id, card_status').eq('business_id', businessId),
-    supabase.from('jobs').select('id, amount, payment_status, completed_at, customers(full_name), job_services(name, price_charged)')
+    supabase.from('payments').select('id, amount, payment_status, completed_at, customers(full_name), job_services(name, price_charged)')
       .eq('business_id', businessId).order('completed_at', { ascending: false }).limit(10),
     supabase.from('jobs').select('id, amount').eq('business_id', businessId)
       .gte('completed_at', new Date().toISOString().slice(0, 10))
@@ -100,7 +100,7 @@ export default async function CompanyDashboardPage({ params }: PageProps) {
                   <CheckCircle2 size={16} className="text-green-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{job.customers?.full_name}</p>
+                  <p className="font-medium text-gray-900">{(job as any).customers?.full_name}</p>
                   <p className="text-sm text-gray-600">
                     {job.job_services?.map(s => s.name).join(', ')}
                   </p>

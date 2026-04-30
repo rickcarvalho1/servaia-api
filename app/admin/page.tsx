@@ -15,7 +15,7 @@ export default async function AdminPage() {
     .from('service_companies')
     .select('*')
 
-  const companiesWithData = await Promise.all(companies.map(async (company) => {
+  const companiesWithData = companies ? await Promise.all(companies.map(async (company) => {
     const { data: owner } = await supabase
       .from('team_members')
       .select('email')
@@ -29,7 +29,7 @@ export default async function AdminPage() {
       .eq('business_id', company.id)
 
     const { count: jobCount } = await supabase
-      .from('jobs')
+      .from('payments')
       .select('*', { count: 'exact', head: true })
       .eq('business_id', company.id)
 
@@ -41,7 +41,7 @@ export default async function AdminPage() {
       customerCount: customerCount || 0,
       jobCount: jobCount || 0,
     }
-  }))
+  })) : []
 
   return <AdminPanel companies={companiesWithData} />
 }
