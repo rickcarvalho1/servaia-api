@@ -126,7 +126,7 @@ export default function ScheduleJobPage() {
   if (loading) return <div className="p-8 text-[#6B7490] text-sm">Loading...</div>;
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="p-4 lg:p-8 max-w-2xl mx-auto">
       <Link
         href="/dashboard/jobs"
         className="flex items-center gap-2 text-[#6B7490] text-sm hover:text-[#0E1117] transition-colors mb-6"
@@ -134,7 +134,7 @@ export default function ScheduleJobPage() {
         <ArrowLeft size={16} /> Back to Jobs
       </Link>
 
-      <h1 className="text-3xl font-bold text-[#0E1117] tracking-tight mb-1"
+      <h1 className="text-2xl lg:text-3xl font-bold text-[#0E1117] tracking-tight mb-1"
           style={{ fontFamily: "Cormorant Garamond, Georgia, serif" }}>
         Schedule a Job
       </h1>

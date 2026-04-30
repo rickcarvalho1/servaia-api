@@ -47,12 +47,12 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 lg:p-8 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-4">
         <div>
           <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
-              className="text-3xl font-bold tracking-tight text-[#0E1117]">
+              className="text-2xl lg:text-3xl font-bold tracking-tight text-[#0E1117]">
             Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}, {member.full_name.split(' ')[0]} 👋
           </h1>
           <p className="text-sm mt-1" style={{ color: '#6B7490' }}>
@@ -60,7 +60,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         <Link href="/dashboard/jobs/new"
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors w-full lg:w-auto"
           style={{ background: '#0E1117' }}>
           + Mark Job Done
         </Link>
@@ -85,16 +85,16 @@ export default async function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map(stat => (
-          <div key={stat.label} className="bg-white rounded-xl p-5 shadow-sm"
+          <div key={stat.label} className="bg-white rounded-xl p-4 lg:p-5 shadow-sm"
                style={{ border: '1px solid #DDE1EC' }}>
             <div className="flex items-center justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center"
                    style={{ background: stat.bg }}>
                 <stat.icon size={18} style={{ color: stat.color }} />
               </div>
               <span className="text-xs font-medium" style={{ color: '#6B7490' }}>{stat.change}</span>
             </div>
-            <div className="text-2xl font-bold font-mono tracking-tight" style={{ color: '#0E1117' }}>
+            <div className="text-xl lg:text-2xl font-bold font-mono tracking-tight" style={{ color: '#0E1117' }}>
               {stat.value}
             </div>
             <div className="text-xs mt-1" style={{ color: '#6B7490' }}>{stat.label}</div>
@@ -124,30 +124,66 @@ export default async function DashboardPage() {
                 </Link>
               </p>
             </div>
-          ) : jobs.map((job: any) => (
-            <div key={job.id} className="flex items-center gap-4 px-6 py-4"
-                 style={{ borderBottom: '1px solid #DDE1EC' }}>
-              {job.payment_status === 'charged' && <CheckCircle2 size={14} style={{ color: '#3DBF7F', flexShrink: 0 }} />}
-              {job.payment_status === 'failed'  && <AlertCircle  size={14} style={{ color: '#E05252', flexShrink: 0 }} />}
-              {job.payment_status === 'pending' && <Clock        size={14} style={{ color: '#E8A020', flexShrink: 0 }} />}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate" style={{ color: '#0E1117' }}>
-                  {(job.customers as any)?.full_name || 'Unknown'}
-                </div>
-                <div className="text-xs truncate" style={{ color: '#6B7490' }}>
-                  {(job.job_services as any[])?.map((s: any) => s.name).join(', ') || '—'}
-                </div>
+          ) : (
+            <>
+              {/* Desktop List */}
+              <div className="hidden lg:block">
+                {jobs.map((job: any) => (
+                  <div key={job.id} className="flex items-center gap-4 px-6 py-4"
+                       style={{ borderBottom: '1px solid #DDE1EC' }}>
+                    {job.payment_status === 'charged' && <CheckCircle2 size={14} style={{ color: '#3DBF7F', flexShrink: 0 }} />}
+                    {job.payment_status === 'failed'  && <AlertCircle  size={14} style={{ color: '#E05252', flexShrink: 0 }} />}
+                    {job.payment_status === 'pending' && <Clock        size={14} style={{ color: '#E8A020', flexShrink: 0 }} />}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold truncate" style={{ color: '#0E1117' }}>
+                        {(job.customers as any)?.full_name || 'Unknown'}
+                      </div>
+                      <div className="text-xs truncate" style={{ color: '#6B7490' }}>
+                        {(job.job_services as any[])?.map((s: any) => s.name).join(', ') || '—'}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-sm font-bold font-mono" style={{ color: '#0E1117' }}>
+                        ${Number(job.amount).toFixed(2)}
+                      </div>
+                      <div className="text-xs" style={{ color: '#6B7490' }}>
+                        {new Date(job.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="text-right flex-shrink-0">
-                <div className="text-sm font-bold font-mono" style={{ color: '#0E1117' }}>
-                  ${Number(job.amount).toFixed(2)}
-                </div>
-                <div className="text-xs" style={{ color: '#6B7490' }}>
-                  {new Date(job.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </div>
+
+              {/* Mobile Cards */}
+              <div className="lg:hidden p-4 space-y-3">
+                {jobs.map((job: any) => (
+                  <div key={job.id} className="bg-white border border-[#DDE1EC] rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="text-sm font-semibold truncate" style={{ color: '#0E1117' }}>
+                        {(job.customers as any)?.full_name || 'Unknown'}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {job.payment_status === 'charged' && <CheckCircle2 size={14} style={{ color: '#3DBF7F' }} />}
+                        {job.payment_status === 'failed'  && <AlertCircle  size={14} style={{ color: '#E05252' }} />}
+                        {job.payment_status === 'pending' && <Clock        size={14} style={{ color: '#E8A020' }} />}
+                      </div>
+                    </div>
+                    <div className="text-xs mb-2" style={{ color: '#6B7490' }}>
+                      {(job.job_services as any[])?.map((s: any) => s.name).join(', ') || '—'}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-bold font-mono" style={{ color: '#0E1117' }}>
+                        ${Number(job.amount).toFixed(2)}
+                      </div>
+                      <div className="text-xs" style={{ color: '#6B7490' }}>
+                        {new Date(job.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            </>
+          )}
         </div>
       </div>
     </div>

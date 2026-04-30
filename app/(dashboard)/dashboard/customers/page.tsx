@@ -28,10 +28,10 @@ export default async function CustomersPage() {
   const failed  = customers?.filter(c => c.card_status === 'failed').length || 0
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 lg:p-8 max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#0E1117]"
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-[#0E1117]"
               style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}>
             Customers
           </h1>
@@ -40,7 +40,7 @@ export default async function CustomersPage() {
           </p>
         </div>
         <Link href="/dashboard/customers/new"
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-lg bg-[#0E1117] hover:bg-[#4F8EF7] transition-colors">
+          className="flex items-center justify-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-lg bg-[#0E1117] hover:bg-[#4F8EF7] transition-colors w-full lg:w-auto">
           <Plus size={16} /> Add Customer
         </Link>
       </div>
@@ -71,7 +71,7 @@ export default async function CustomersPage() {
             </Link>
           </div>
         ) : (
-          <div>
+          <div className="hidden lg:block">
             {customers.map((customer: any) => (
               <Link key={customer.id} href={`/dashboard/customers/${customer.id}`}
                 className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors border-b border-[#DDE1EC] last:border-0">
@@ -115,6 +115,81 @@ export default async function CustomersPage() {
             ))}
           </div>
         )}
+
+        {/* Mobile Cards */}
+        <div className="lg:hidden">
+          {!customers || customers.length === 0 ? (
+            <div className="py-20 text-center">
+              <Users size={40} className="mx-auto mb-4 text-[#DDE1EC]" />
+              <p className="font-semibold mb-1 text-[#0E1117]">No customers yet</p>
+              <p className="text-sm mb-4 text-[#6B7490]">
+                Add your first customer and send them an authorization link.
+              </p>
+              <Link href="/dashboard/customers/new"
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-lg bg-[#4F8EF7]">
+                <Plus size={16} /> Add First Customer
+              </Link>
+            </div>
+          ) : (
+            <div className="p-4 space-y-3">
+              {customers.map((customer: any) => (
+                <Link key={customer.id} href={`/dashboard/customers/${customer.id}`}
+                  className="block bg-white border border-[#DDE1EC] rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[rgba(79,142,247,0.1)] text-[#4F8EF7]">
+                      {(customer.full_name || customer.name)?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-semibold text-[#0E1117] truncate">
+                          {customer.full_name || customer.name}
+                        </span>
+                        {customer.card_status === 'active' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(61,191,127,0.1)] text-[#3DBF7F]">
+                            <CheckCircle2 size={10} /> Card on file
+                          </span>
+                        )}
+                        {customer.card_status === 'pending' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(232,160,32,0.1)] text-[#E8A020]">
+                            <Clock size={10} /> Pending
+                          </span>
+                        )}
+                        {customer.card_status === 'failed' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(224,82,82,0.1)] text-[#E05252]">
+                            <XCircle size={10} /> Failed
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        {customer.phone && (
+                          <div className="flex items-center gap-1 text-xs text-[#6B7490]">
+                            <Phone size={10} />{customer.phone}
+                          </div>
+                        )}
+                        {customer.email && (
+                          <div className="flex items-center gap-1 text-xs text-[#6B7490] truncate">
+                            <Mail size={10} />{customer.email}
+                          </div>
+                        )}
+                        {customer.address && (
+                          <div className="text-xs text-[#6B7490] truncate">
+                            📍 {customer.address}
+                          </div>
+                        )}
+                        {customer.card_last4 && (
+                          <div className="text-xs text-[#6B7490]">
+                            {customer.card_brand} ···{customer.card_last4}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <ArrowUpRight size={14} className="text-[#DDE1EC] flex-shrink-0 mt-1" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

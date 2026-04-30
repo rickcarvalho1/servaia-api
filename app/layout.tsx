@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { StripeProvider } from '@/components/StripeProvider'
 
 export const metadata: Metadata = {
   title: "Servaia — Get Paid the Moment the Job's Done",
@@ -15,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <StripeProvider>{children}</StripeProvider>
+      </body>
     </html>
   )
 }

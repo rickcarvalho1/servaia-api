@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 type Customer = {
   id: string;
@@ -73,6 +74,11 @@ export default function CustomerDetailPage() {
   const [savingPrices, setSavingPrices] = useState(false);
   const [pricesDirty, setPricesDirty] = useState(false);
   const [localOverrides, setLocalOverrides] = useState<Record<string, string>>({});
+
+  const [showManualCardModal, setShowManualCardModal] = useState(false);
+  const [manualCardSubmitting, setManualCardSubmitting] = useState(false);
+  const [manualCardError, setManualCardError] = useState<string | null>(null);
+  const [manualCardSuccess, setManualCardSuccess] = useState(false);
 
   const supabase = createClient();
 
@@ -415,28 +421,39 @@ export default function CustomerDetailPage() {
           </div>
         )}
         <div className="space-y-2">
-          <button
-            onClick={handleSendAuthLink}
-            disabled={sendingLink || !customer.phone}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-[#0E1117] transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {sendingLink ? (
-              <>
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Sending…
-              </>
-            ) : (
-              <>
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                {cardActive ? "Re-send auth link" : "Send auth link via SMS"}
-              </>
-            )}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSendAuthLink}
+              disabled={sendingLink || !customer.phone}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-[#0E1117] transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sendingLink ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Sending…
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  {cardActive ? "Re-send auth link" : "Send auth link via SMS"}
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setShowManualCardModal(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-[#0E1117] transition hover:bg-gray-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Enter Card Manually
+            </button>
+          </div>
           {!customer.phone && (
             <p className="text-xs text-gray-400">Add a phone number to this customer to send an auth link.</p>
           )}
@@ -545,6 +562,152 @@ export default function CustomerDetailPage() {
         )}
       </div>
 
+      {/* Manual Card Modal */}
+      {showManualCardModal && (
+        <ManualCardModal
+          customerId={customerId}
+          onClose={() => {
+            setShowManualCardModal(false);
+            setManualCardError(null);
+            setManualCardSuccess(false);
+          }}
+          onSuccess={() => {
+            setManualCardSuccess(true);
+            loadCustomer();
+            setTimeout(() => setShowManualCardModal(false), 2000);
+          }}
+        />
+      )}
+
+    </div>
+  );
+}
+
+function ManualCardModal({
+  customerId,
+  onClose,
+  onSuccess,
+}: {
+  customerId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      // Create SetupIntent
+      const res = await fetch("/api/stripe/setup-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const { clientSecret } = data;
+
+      // Confirm SetupIntent
+      const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        clientSecret,
+        redirect: "if_required",
+      });
+
+      if (confirmError) {
+        setError(confirmError.message ?? "Something went wrong.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (setupIntent?.status === "succeeded") {
+        // Update customer with setupIntentId
+        const updateRes = await fetch("/api/customers/update-card", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerId,
+            setupIntentId: setupIntent.id,
+          }),
+        });
+
+        const updateData = await updateRes.json();
+        if (!updateRes.ok) throw new Error(updateData.error);
+
+        onSuccess();
+      } else {
+        setError("Card setup did not complete. Please try again.");
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-[#0E1117]">Enter Card Details</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Card Information</label>
+            <div className="border border-gray-300 rounded-lg p-3">
+              <CardElement
+                options={{
+                  style: {
+                    base: {
+                      fontSize: '16px',
+                      color: '#424770',
+                      '::placeholder': {
+                        color: '#aab7c4',
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !stripe}
+              className="flex-1 py-3 bg-[#0E1117] text-white rounded-lg hover:bg-[#1a2130] disabled:opacity-50"
+            >
+              {submitting ? "Saving…" : "Save Card"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

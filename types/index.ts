@@ -6,6 +6,8 @@ export type BusinessStatus = 'lead' | 'onboarding' | 'active' | 'paused'
 export interface Business {
   id: string
   name: string
+  company_name: string | null
+  logo_url: string | null
   owner_name: string
   owner_email: string
   owner_phone: string
@@ -116,6 +118,7 @@ export interface AppUser {
   email: string
   businessId: string
   businessName: string
+  logoUrl: string | null
   fullName: string
   role: UserRole
 }

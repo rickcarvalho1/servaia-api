@@ -1,69 +1,22 @@
-'use client'
-
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-
-const TRADES = [
-  'Landscaping / Lawn Care','House Cleaning','Commercial Cleaning',
-  'Plumbing','HVAC','Electrical','Pest Control','Pool Service',
-  'Tree Service / Arborist','Snow Removal','Window Cleaning',
-  'General Contracting','Other',
-]
-
-const DEFAULT_SERVICES: Record<string, { name: string; emoji: string; price: number; unit: string }[]> = {
-  'Landscaping / Lawn Care': [
-    { name: 'Lawn Mowing', emoji: '🌿', price: 85, unit: 'visit' },
-    { name: 'Edging & Trimming', emoji: '✂️', price: 40, unit: 'visit' },
-    { name: 'Weeding', emoji: '🌾', price: 65, unit: 'visit' },
-    { name: 'Leaf Cleanup', emoji: '🍂', price: 120, unit: 'visit' },
-    { name: 'Fertilizer Treatment', emoji: '🌱', price: 95, unit: 'visit' },
-    { name: 'Mulch Install', emoji: '🪵', price: 180, unit: 'job' },
-    { name: 'Tree & Shrub Trim', emoji: '🌳', price: 150, unit: 'job' },
-    { name: 'Snow Removal', emoji: '❄️', price: 95, unit: 'event' },
-  ],
-  'House Cleaning': [
-    { name: 'Standard Clean', emoji: '🧹', price: 120, unit: 'visit' },
-    { name: 'Deep Clean', emoji: '✨', price: 220, unit: 'visit' },
-    { name: 'Move-In/Out Clean', emoji: '📦', price: 300, unit: 'job' },
-    { name: 'Window Cleaning', emoji: '🪟', price: 110, unit: 'visit' },
-  ],
-  'Commercial Cleaning': [
-    { name: 'Office Clean', emoji: '🏢', price: 200, unit: 'visit' },
-    { name: 'Deep Clean', emoji: '✨', price: 400, unit: 'visit' },
-    { name: 'Floor Care', emoji: '🧴', price: 250, unit: 'visit' },
-    { name: 'Post-Construction', emoji: '🏗️', price: 500, unit: 'job' },
-  ],
-  'HVAC': [
-    { name: 'AC Maintenance', emoji: '❄️', price: 150, unit: 'visit' },
-    { name: 'Heating Tune-Up', emoji: '🔥', price: 150, unit: 'visit' },
-    { name: 'Filter Replacement', emoji: '🌬️', price: 45, unit: 'visit' },
-    { name: 'Emergency Service', emoji: '🚨', price: 250, unit: 'job' },
-  ],
-  'Plumbing': [
-    { name: 'Drain Cleaning', emoji: '🚿', price: 150, unit: 'job' },
-    { name: 'Leak Repair', emoji: '💧', price: 200, unit: 'job' },
-    { name: 'Toilet Repair', emoji: '🚽', price: 175, unit: 'job' },
-    { name: 'Emergency Plumbing', emoji: '🚨', price: 295, unit: 'job' },
-  ],
-}
-
-const FALLBACK_SERVICES = [
-  { name: 'Standard Service', emoji: '⚙️', price: 125, unit: 'job' },
-  { name: 'Premium Service', emoji: '⭐', price: 225, unit: 'job' },
-  { name: 'Emergency Call', emoji: '🚨', price: 295, unit: 'job' },
-]
-
-type Step = 1 | 2 | 3
+import { Suspense } from 'react'
+import SignupForm from './SignupForm'
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0E1117] flex items-center justify-center text-white">Loading...</div>}>
+      <SignupForm />
+    </Suspense>
+  )
+}
   const router   = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [step, setStep]       = useState<Step>(1)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const [inviteData, setInviteData] = useState<{ business_id: string; role: string; email: string } | null>(null)
 
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
@@ -73,6 +26,33 @@ export default function SignupPage() {
   const [phone, setPhone]         = useState('')
   const [trade, setTrade]         = useState('')
   const [services, setServices]   = useState<{ name: string; emoji: string; price: number; unit: string }[]>([])
+
+  useEffect(() => {
+    const invite = searchParams.get('invite')
+    if (invite) {
+      setInviteToken(invite)
+      loadInvite(invite)
+    }
+  }, [searchParams])
+
+  async function loadInvite(token: string) {
+    try {
+      const { data, error } = await supabase
+        .from('invite_tokens')
+        .select('business_id, role, email, expires_at, used')
+        .eq('token', token)
+        .single()
+
+      if (error || !data) throw new Error('Invalid invite link')
+      if (data.used) throw new Error('This invite has already been used')
+      if (new Date(data.expires_at) < new Date()) throw new Error('This invite has expired')
+
+      setInviteData({ business_id: data.business_id, role: data.role, email: data.email })
+      setEmail(data.email)
+    } catch (err: any) {
+      setError(err.message || 'Failed to load invite')
+    }
+  }
 
   function loadDefaultServices(selectedTrade: string) {
     const defaults = DEFAULT_SERVICES[selectedTrade] || FALLBACK_SERVICES
@@ -84,7 +64,13 @@ export default function SignupPage() {
     if (password !== confirmPw) { setError('Passwords do not match'); return }
     if (password.length < 8)    { setError('Password must be at least 8 characters'); return }
     setError(null)
-    setStep(2)
+    
+    // If invite, skip to step 3 (no business setup needed)
+    if (inviteData) {
+      setStep(3)
+    } else {
+      setStep(2)
+    }
   }
 
   async function handleStep2(e: React.FormEvent) {
@@ -106,6 +92,49 @@ export default function SignupPage() {
       })
 
       if (authErr || !authData.user) throw new Error(authErr?.message || 'Signup failed')
+
+      if (inviteData) {
+        // Handle invite signup
+        const { data: existingMember } = await supabase
+          .from('team_members')
+          .select('id')
+          .eq('email', email)
+          .eq('business_id', inviteData.business_id)
+          .single()
+
+        if (existingMember) {
+          // Update existing member record
+          await supabase
+            .from('team_members')
+            .update({
+              user_id: authData.user.id,
+              full_name: ownerName,
+              active: true,
+            })
+            .eq('id', existingMember.id)
+        } else {
+          // Create new member record
+          await supabase.from('team_members').insert({
+            business_id: inviteData.business_id,
+            user_id:     authData.user.id,
+            full_name:   ownerName,
+            email,
+            phone,
+            role:        inviteData.role,
+            active:      true,
+          })
+        }
+
+        // Mark invite as used
+        await supabase
+          .from('invite_tokens')
+          .update({ used: true, used_at: new Date().toISOString() })
+          .eq('token', inviteToken)
+
+        router.push('/dashboard')
+        router.refresh()
+        return
+      }
 
       const { data: biz, error: bizErr } = await supabase
         .from('service_companies')
@@ -161,11 +190,12 @@ export default function SignupPage() {
   const selectClass = "w-full px-4 py-3 bg-white/[0.06] border border-white/10 rounded-lg text-sm text-white outline-none focus:border-blue-400 transition-colors appearance-none"
 
   return (
-    <div className="min-h-screen bg-[#0E1117] flex flex-col items-center justify-center px-4 py-12"
-         style={{
-           backgroundImage: 'linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px)',
-           backgroundSize: '60px 60px'
-         }}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0E1117] flex items-center justify-center text-white">Loading...</div>}>
+      <div className="min-h-screen bg-[#0E1117] flex flex-col items-center justify-center px-4 py-12"
+           style={{
+             backgroundImage: 'linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px)',
+             backgroundSize: '60px 60px'
+           }}>
 
       <div className="w-full max-w-lg relative z-10">
         <div className="text-center mb-8">
@@ -173,7 +203,9 @@ export default function SignupPage() {
               className="text-4xl font-bold text-white tracking-tight">
             Servaia
           </h1>
-          <p className="text-sm text-white/40 tracking-widest uppercase mt-1">Set up your account</p>
+          <p className="text-sm text-white/40 tracking-widest uppercase mt-1">
+            {inviteData ? `Join ${bizName || 'your team'}` : 'Set up your account'}
+          </p>
         </div>
 
         {/* Step indicator */}
@@ -216,7 +248,7 @@ export default function SignupPage() {
             </form>
           )}
 
-          {step === 2 && (
+          {step === 2 && !inviteData && (
             <form onSubmit={handleStep2} className="space-y-5">
               <div>
                 <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
@@ -297,5 +329,6 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+    </Suspense>
   )
 }

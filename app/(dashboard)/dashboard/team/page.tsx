@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Plus, Mail, Phone, Shield, Wrench, User, CheckCircle2 } from 'lucide-react'
+import { Users, Plus, Mail, Phone, Shield, Wrench, User, CheckCircle2, Send } from 'lucide-react'
 
 const ROLE_CONFIG = {
   owner:   { label: 'Owner',      color: 'text-[#E8B84B] bg-[rgba(232,184,75,0.1)]   border-[rgba(232,184,75,0.2)]',   icon: Shield },
@@ -19,8 +19,10 @@ export default function TeamPage() {
   const [error, setError]         = useState<string | null>(null)
   const [success, setSuccess]     = useState<string | null>(null)
   const [businessId, setBusinessId] = useState('')
+  const [businessName, setBusinessName] = useState('')
   const [currentRole, setCurrentRole] = useState('owner')
-  const [form, setForm] = useState({ full_name: '', email: '', phone: '', role: 'tech' })
+  const [form, setForm] = useState({ email: '', role: 'tech' })
+  const [resendingEmail, setResendingEmail] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -28,16 +30,19 @@ export default function TeamPage() {
       if (!user) return
       const { data: member } = await supabase
         .from('team_members')
-        .select('role, service_companies(id)')
+        .select('role, service_companies(id, name, company_name)')
         .eq('user_id', user.id)
         .single()
       if (!member) return
-      setBusinessId((member.service_companies as any).id)
+      const bizId = (member.service_companies as any).id
+      const bizName = (member.service_companies as any).company_name || (member.service_companies as any).name
+      setBusinessId(bizId)
+      setBusinessName(bizName)
       setCurrentRole(member.role)
       const { data } = await supabase
         .from('team_members')
         .select('*')
-        .eq('business_id', (member.service_companies as any).id)
+        .eq('business_id', bizId)
         .order('created_at')
       setMembers(data || [])
       setLoading(false)
@@ -50,22 +55,39 @@ export default function TeamPage() {
     setSaving(true)
     setError(null)
     try {
-      const { data, error: insertErr } = await supabase
+      const res = await fetch('/api/team/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          role: form.role,
+          businessId,
+          businessName,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to send invite')
+
+      // Create a pending team_member record
+      const { data: newMember, error: insertErr } = await supabase
         .from('team_members')
         .insert({
           business_id: businessId,
-          user_id:     '00000000-0000-0000-0000-000000000000',
-          full_name:   form.full_name,
-          email:       form.email,
-          phone:       form.phone || null,
-          role:        form.role,
-          active:      false,
+          user_id: '00000000-0000-0000-0000-000000000000', // placeholder
+          full_name: form.email.split('@')[0],
+          email: form.email,
+          phone: null,
+          role: form.role,
+          active: false,
         })
         .select()
         .single()
+
       if (insertErr) throw new Error(insertErr.message)
-      setMembers(prev => [...prev, data])
-      setForm({ full_name: '', email: '', phone: '', role: 'tech' })
+
+      setMembers(prev => [...prev, newMember])
+      setForm({ email: '', role: 'tech' })
       setShowForm(false)
       setSuccess(`Invite sent to ${form.email}`)
       setTimeout(() => setSuccess(null), 4000)
@@ -73,6 +95,37 @@ export default function TeamPage() {
       setError(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleResendInvite(memberEmail: string) {
+    setResendingEmail(memberEmail)
+    setError(null)
+    try {
+      // Find the role for this email
+      const member = members.find(m => m.email === memberEmail)
+      if (!member) throw new Error('Member not found')
+
+      const res = await fetch('/api/team/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: memberEmail,
+          role: member.role,
+          businessId,
+          businessName,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to resend invite')
+
+      setSuccess(`Invite resent to ${memberEmail}`)
+      setTimeout(() => setSuccess(null), 4000)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setResendingEmail(null)
     }
   }
 
@@ -151,16 +204,27 @@ export default function TeamPage() {
                   {member.phone && <span className="flex items-center gap-1"><Phone size={10} />{member.phone}</span>}
                 </div>
               </div>
-              {currentRole === 'owner' && member.role !== 'owner' && (
-                <button onClick={() => toggleActive(member.id, member.active)}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                    member.active
-                      ? 'border-[rgba(224,82,82,0.2)] text-[#E05252] hover:bg-[rgba(224,82,82,0.1)]'
-                      : 'border-[rgba(61,191,127,0.2)] text-[#3DBF7F] hover:bg-[rgba(61,191,127,0.1)]'
-                  }`}>
-                  {member.active ? 'Deactivate' : 'Activate'}
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {!member.active && (currentRole === 'owner' || currentRole === 'manager') && (
+                  <button
+                    onClick={() => handleResendInvite(member.email)}
+                    disabled={resendingEmail === member.email}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-[rgba(79,142,247,0.2)] text-[#4F8EF7] hover:bg-[rgba(79,142,247,0.1)] transition-colors disabled:opacity-50"
+                  >
+                    {resendingEmail === member.email ? 'Sending...' : 'Resend'}
+                  </button>
+                )}
+                {currentRole === 'owner' && member.role !== 'owner' && member.active && (
+                  <button onClick={() => toggleActive(member.id, member.active)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                      member.active
+                        ? 'border-[rgba(224,82,82,0.2)] text-[#E05252] hover:bg-[rgba(224,82,82,0.1)]'
+                        : 'border-[rgba(61,191,127,0.2)] text-[#3DBF7F] hover:bg-[rgba(61,191,127,0.1)]'
+                    }`}>
+                    {member.active ? 'Deactivate' : 'Activate'}
+                  </button>
+                )}
+              </div>
             </div>
           )
         })}
@@ -173,24 +237,12 @@ export default function TeamPage() {
                 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}>
               Invite Team Member
             </h3>
-            <p className="text-sm text-[#6B7490] mb-5">They'll receive an email to set up their login.</p>
+            <p className="text-sm text-[#6B7490] mb-5">They'll receive an email with a signup link.</p>
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Full Name</label>
-                <input type="text" value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))} required
-                  placeholder="Marcus Johnson"
-                  className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Email</label>
+                <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Email Address</label>
                 <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required
-                  placeholder="marcus@email.com"
-                  className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Phone (optional)</label>
-                <input type="tel" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-                  placeholder="(555) 000-0000"
+                  placeholder="team@example.com"
                   className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
               </div>
               <div>

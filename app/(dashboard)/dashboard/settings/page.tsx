@@ -14,6 +14,9 @@ export default function SettingsPage() {
   const [saving, setSaving]         = useState(false)
   const [businessId, setBusinessId] = useState('')
   const [bizName, setBizName]       = useState('')
+  const [logoUrl, setLogoUrl]       = useState<string | null>(null)
+  const [companyName, setCompanyName] = useState('')
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [success, setSuccess]       = useState<string | null>(null)
   const [showBulk, setShowBulk]     = useState(false)
   const [bulkType, setBulkType]     = useState<'pct' | 'flat'>('pct')
@@ -26,13 +29,15 @@ export default function SettingsPage() {
       if (!user) return
       const { data: member } = await supabase
         .from('team_members')
-        .select('service_companies(id, name)')
+        .select('service_companies(id, name, company_name, logo_url)')
         .eq('user_id', user.id)
         .single()
       if (!member) return
       const biz = member.service_companies as any
       setBusinessId(biz.id)
       setBizName(biz.name)
+      setCompanyName(biz.company_name || biz.name)
+      setLogoUrl(biz.logo_url)
       const { data } = await supabase
         .from('services')
         .select('*')
@@ -90,6 +95,46 @@ export default function SettingsPage() {
     setServices(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s))
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingLogo(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${businessId}_${Date.now()}.${fileExt}`
+      const { data, error } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, file)
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(fileName)
+      await supabase
+        .from('service_companies')
+        .update({ logo_url: publicUrl })
+        .eq('id', businessId)
+      setLogoUrl(publicUrl)
+      flash('Logo uploaded')
+    } catch (err: any) {
+      alert('Upload failed: ' + err.message)
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  async function saveBranding() {
+    setSaving(true)
+    try {
+      await supabase
+        .from('service_companies')
+        .update({ company_name: companyName })
+        .eq('id', businessId)
+      flash('Branding saved')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleBulkPrice() {
     if (!bulkValue || parseFloat(bulkValue) === 0) return
     setSaving(true)
@@ -128,6 +173,35 @@ export default function SettingsPage() {
           <CheckCircle2 size={16} /> {success}
         </div>
       )}
+
+      <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm mb-6">
+        <div className="px-6 py-4 border-b border-[#DDE1EC]">
+          <h2 className="font-semibold text-[#0E1117]">Branding</h2>
+          <p className="text-xs text-[#6B7490] mt-0.5">Customize your company's appearance</p>
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Company Name</label>
+            <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Logo</label>
+            {logoUrl && (
+              <div className="mb-3">
+                <img src={logoUrl} alt="Company logo" className="h-16 w-16 rounded-lg object-cover border border-[#DDE1EC]" />
+              </div>
+            )}
+            <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo}
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#4F8EF7] file:text-white hover:file:bg-[#3B82F6]" />
+            {uploadingLogo && <p className="text-xs text-[#6B7490] mt-1">Uploading...</p>}
+          </div>
+          <button onClick={saveBranding} disabled={saving}
+            className="w-full py-3 bg-[#0E1117] text-white font-bold text-sm rounded-lg hover:bg-[#4F8EF7] transition-colors disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Branding'}
+          </button>
+        </div>
+      </div>
 
       <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#DDE1EC]">

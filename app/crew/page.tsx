@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState, useRef, useCallback } from "react";import { useRouter, useSearchParams } from 'next/navigation';import { createClient } from "@/lib/supabase/client";
 
 type Job = {
   id: string;
@@ -33,6 +32,8 @@ type PageView = "jobs" | "complete" | "success";
 
 export default function CrewPage() {
   const supabase = createClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,9 +67,11 @@ export default function CrewPage() {
     setCrewMember(member.full_name || "");
 
     const now = new Date();
-    const offset = now.getTimezoneOffset() * 60000;
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const startStr = `${year}-${month}-${day}T00:00:00`;
+    const endStr = `${year}-${month}-${day}T23:59:59`;
 
     const { data } = await supabase
       .from("payments")
@@ -88,8 +91,8 @@ export default function CrewPage() {
       `)
       .eq("business_id", bizId)
       .eq("job_status", "scheduled")
-      .gte("scheduled_for", todayStart.toISOString())
-      .lte("scheduled_for", todayEnd.toISOString())
+      .gte("scheduled_for", startStr)
+      .lte("scheduled_for", endStr)
       .order("scheduled_for", { ascending: true });
 
     setJobs((data ?? []) as any as Job[]);
@@ -99,6 +102,18 @@ export default function CrewPage() {
   useEffect(() => {
     loadJobs();
   }, [loadJobs]);
+
+  useEffect(() => {
+    const jobId = searchParams.get('job');
+    if (jobId && jobs.length > 0) {
+      const job = jobs.find(j => j.id === jobId);
+      if (job) {
+        setSelectedJob(job);
+        setView("complete");
+        setCompleteError(null);
+      }
+    }
+  }, [searchParams, jobs]);
 
   async function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -208,7 +223,7 @@ try {
             <p className="text-xs text-[#6B7490] mb-6">{photos.length} photo{photos.length !== 1 ? "s" : ""} uploaded</p>
           )}
           <button
-            onClick={() => { setView("jobs"); setSelectedJob(null); setPhotos([]); setCompleteResult(null); loadJobs(); }}
+            onClick={() => { setView("jobs"); setSelectedJob(null); setPhotos([]); setCompleteResult(null); loadJobs(); router.push('/crew'); }}
             className="w-full py-3 bg-[#0E1117] text-white font-semibold rounded-xl"
           >
             Back to jobs
@@ -224,7 +239,7 @@ try {
       <div className="min-h-screen bg-[#F8F9FC]">
         <div className="bg-white border-b border-[#DDE1EC] px-4 py-4 flex items-center gap-3">
           <button
-            onClick={() => { setView("jobs"); setPhotos([]); setCompleteError(null); }}
+            onClick={() => { setView("jobs"); setPhotos([]); setCompleteError(null); router.push('/crew'); }}
             className="p-2 rounded-lg hover:bg-gray-50"
           >
             <svg className="h-5 w-5 text-[#6B7490]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -376,7 +391,7 @@ try {
             return (
               <button
                 key={job.id}
-                onClick={() => { setSelectedJob(job); setView("complete"); setCompleteError(null); }}
+                onClick={() => router.push(`/crew?job=${job.id}`)}
                 className="w-full bg-white rounded-2xl border border-[#DDE1EC] p-5 text-left hover:border-[#4F8EF7] transition shadow-sm"
               >
                 <div className="flex items-start justify-between mb-3">
