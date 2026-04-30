@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
 
   // Public routes - no auth needed
   const publicRoutes = ['/', '/get-started', '/privacy', '/terms', '/login', '/signup', '/authorize', '/api', '/crew']
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+  const isPublicRoute = pathname === '/' || publicRoutes.slice(1).some(route => pathname.startsWith(route))
 
   // Protected routes - require auth
   const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
