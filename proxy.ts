@@ -26,23 +26,34 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  if ((pathname.startsWith('/dashboard') || pathname.startsWith('/crew')) && !user) {
+  // Only protect dashboard and admin routes
+  if ((pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // Redirect authenticated users away from auth pages
   if ((pathname === '/login' || pathname === '/signup') && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  if (pathname === '/') {
-    return NextResponse.redirect(
-      new URL(user ? '/dashboard' : '/login', request.url)
-    )
-  }
+  // Let root path show marketing page for everyone
+  // No redirect logic needed here
 
   return supabaseResponse
 }
 
 export const config = {
-matcher: ['/', '/dashboard/:path*', '/crew/:path*', '/login', '/signup', '/authorize/:path*'],
+  matcher: [
+    '/',
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/get-started',
+    '/privacy',
+    '/terms',
+    '/login',
+    '/signup',
+    '/authorize/:path*',
+    '/api/stripe/connect/callback',
+    '/api/onboarding/welcome'
+  ],
 }
