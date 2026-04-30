@@ -120,10 +120,7 @@ export default function GetStartedForm() {
         <div className="mb-10 text-center">
           <p className="text-sm uppercase tracking-[0.35em] text-blue-300/70">Start your free trial</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight">Get started with Servaia</h1>
-          <p className="mt-3 text-base text-slate-300">Self-serve onboarding for service businesses. No credit card required for 30 days.</p>
-        </div>
-
-        <div className="grid gap-8 lg:grid-cols-[1.4fr_0.6fr]">
+            <p className="mt-3 text-base text-slate-300">Self-serve onboarding for service businesses. No credit card to start — free for 30 days, then $49/month.</p>
           <div className="rounded-[28px] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/10 backdrop-blur-md">
             {step === 1 && (
               <form onSubmit={handleNext} className="space-y-6">
@@ -172,8 +169,8 @@ export default function GetStartedForm() {
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <p className="text-sm uppercase tracking-[0.35em] text-blue-300/80">Starter</p>
-                      <p className="mt-4 text-4xl font-semibold text-white">$49<span className="text-base font-medium text-slate-400">/month</span></p>
-                      <p className="mt-2 text-sm text-slate-400">+ 3.5% per transaction</p>
+                      <p className="mt-4 text-5xl font-semibold text-white">$49/month</p>
+                      <p className="mt-2 text-sm text-slate-400">Plus 3.5% + $0.30 per transaction</p>
                     </div>
                   </div>
 
@@ -183,7 +180,7 @@ export default function GetStartedForm() {
                     <p>• Crew marks job done — card charges automatically</p>
                     <p>• Scheduling, job tracking, photo documentation</p>
                     <p>• Cancel anytime, no contracts</p>
-                    <p>• 30-day free trial — no credit card required at signup</p>
+                    <p>• No credit card to start — free for 30 days, then $49/month</p>
                   </div>
                 </div>
 
@@ -199,7 +196,7 @@ export default function GetStartedForm() {
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-[0.35em] text-blue-300/80">Step 3</div>
                   <h2 className="mt-3 text-2xl font-semibold">Create your account</h2>
-                  <p className="mt-2 text-slate-300">No credit card required — start your free trial today.</p>
+                  <p className="mt-2 text-slate-300">No credit card to start — free for 30 days, then $49/month.</p>
                 </div>
 
                 <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6">

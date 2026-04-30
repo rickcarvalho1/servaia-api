@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           <div class="content">
             <p>Hi ${name || 'there'},</p>
             
-            <p>Welcome to Servaia! Your account for <strong>${company || 'your business'}</strong> is ready to go. No credit card required. Your 30-day free trial starts today.</p>
+            <p>Welcome to Servaia! Your account for <strong>${company || 'your business'}</strong> is ready to go. No credit card to start — free for 30 days, then $49/month. Your 30-day free trial starts today.</p>
 
             <div class="section">
               <h2>🚀 Get Started in 3 Steps</h2>
