@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // Get customer with business
     const { data: customer, error: custErr } = await supabase
       .from('customers')
-      .select('*, service_companies(id, name, surcharge_enabled, surcharge_percentage)')
+      .select('*, service_companies(id, name, surcharge_enabled, surcharge_percentage, stripe_account_id)')
       .eq('id', customerId)
       .single()
 
@@ -56,6 +56,10 @@ export async function POST(request: Request) {
     }
 
     const serviceNames = services.map((s: any) => s.name).join(', ')
+    const stripeAccountId = (customer.service_companies as any)?.stripe_account_id
+    if (!stripeAccountId) {
+      return NextResponse.json({ error: 'Business Stripe account not connected' }, { status: 400 })
+    }
     const surchargeEnabled = !!(customer.service_companies as any)?.surcharge_enabled
     const surchargePercentage = parseFloat((customer.service_companies as any)?.surcharge_percentage || 0)
     const surchargeAmountCents = surchargeEnabled
@@ -63,6 +67,7 @@ export async function POST(request: Request) {
       : 0
     const totalWithSurchargeCents = totalCents + surchargeAmountCents
     const totalDollars = (totalWithSurchargeCents / 100).toFixed(2)
+    const platformFeeCents = Math.round(totalWithSurchargeCents * 0.006)
 
     // Charge the card
     const paymentIntent = await stripe.paymentIntents.create({
@@ -73,6 +78,10 @@ export async function POST(request: Request) {
       confirm:        true,
       off_session:    true,
       description:    `${businessName}: ${serviceNames}`,
+      transfer_data: {
+        destination: stripeAccountId,
+      },
+      application_fee_amount: platformFeeCents,
       metadata: {
         customerId,
         businessId,

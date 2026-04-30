@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         customers (
           id, full_name, name, email, phone,
           stripe_customer_id, stripe_payment_method,
-          service_companies (id, name, surcharge_enabled, surcharge_percentage)
+          service_companies (id, name, surcharge_enabled, surcharge_percentage, stripe_account_id)
         ),
         job_services (name, price_charged)
       `)
@@ -123,6 +123,11 @@ export async function POST(request: Request) {
     const company = Array.isArray(customer.service_companies)
       ? customer.service_companies[0]
       : customer.service_companies
+
+    const stripeAccountId = company?.stripe_account_id
+    if (!stripeAccountId) {
+      return NextResponse.json({ error: 'Business Stripe account not connected' }, { status: 400 })
+    }
 
     if (!customer.stripe_customer_id || !customer.stripe_payment_method) {
       return NextResponse.json({ error: 'Customer has no card on file' }, { status: 402 })
@@ -143,6 +148,7 @@ export async function POST(request: Request) {
       ? Math.round(totalCents * (surchargePercentage / 100))
       : 0
     const totalWithSurchargeCents = totalCents + surchargeAmountCents
+    const platformFeeCents = Math.round(totalWithSurchargeCents * 0.006)
 
     const businessName = company?.name || 'Servaia'
     const customerName = customer.full_name || customer.name || 'Customer'
@@ -150,13 +156,17 @@ export async function POST(request: Request) {
     const totalDollars = (totalWithSurchargeCents / 100).toFixed(2)
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalWithSurchargeCents,
-      currency: 'usd',
-      customer: customer.stripe_customer_id,
+      amount:         totalWithSurchargeCents,
+      currency:       'usd',
+      customer:       customer.stripe_customer_id,
       payment_method: customer.stripe_payment_method,
-      confirm: true,
-      off_session: true,
-      description: `${businessName}: ${serviceNames}`,
+      confirm:        true,
+      off_session:    true,
+      description:    `${businessName}: ${serviceNames}`,
+      transfer_data: {
+        destination: stripeAccountId,
+      },
+      application_fee_amount: platformFeeCents,
       metadata: {
         jobId,
         customerId: customer.id,

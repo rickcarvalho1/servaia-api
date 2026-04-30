@@ -15,6 +15,7 @@ export interface Business {
   industry: string | null
   resend_from_domain: string | null
   stripe_account_id: string | null
+  stripe_connect_status: string | null
   status: BusinessStatus
   customer_count: string | null
   pain_notes: string | null

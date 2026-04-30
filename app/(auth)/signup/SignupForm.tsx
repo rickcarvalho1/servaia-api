@@ -228,7 +228,7 @@ export default function SignupForm() {
         await supabase.from('services').insert(serviceRows)
       }
 
-      router.push('/dashboard')
+      router.push('/dashboard/settings/stripe-connect')
       router.refresh()
 
     } catch (err: any) {
