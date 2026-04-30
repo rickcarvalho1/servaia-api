@@ -16,6 +16,8 @@ export default function SettingsPage() {
   const [bizName, setBizName]       = useState('')
   const [logoUrl, setLogoUrl]       = useState<string | null>(null)
   const [companyName, setCompanyName] = useState('')
+  const [surchargeEnabled, setSurchargeEnabled] = useState(false)
+  const [surchargePercentage, setSurchargePercentage] = useState(3.5)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [success, setSuccess]       = useState<string | null>(null)
   const [showBulk, setShowBulk]     = useState(false)
@@ -29,7 +31,7 @@ export default function SettingsPage() {
       if (!user) return
       const { data: member } = await supabase
         .from('team_members')
-        .select('service_companies(id, name, company_name, logo_url)')
+        .select('service_companies(id, name, company_name, logo_url, surcharge_enabled, surcharge_percentage)')
         .eq('user_id', user.id)
         .single()
       if (!member) return
@@ -38,6 +40,8 @@ export default function SettingsPage() {
       setBizName(biz.name)
       setCompanyName(biz.company_name || biz.name)
       setLogoUrl(biz.logo_url)
+      setSurchargeEnabled(!!biz.surcharge_enabled)
+      setSurchargePercentage(parseFloat(biz.surcharge_percentage) || 3.5)
       const { data } = await supabase
         .from('services')
         .select('*')
@@ -135,6 +139,22 @@ export default function SettingsPage() {
     }
   }
 
+  async function savePaymentSettings() {
+    setSaving(true)
+    try {
+      await supabase
+        .from('service_companies')
+        .update({
+          surcharge_enabled: surchargeEnabled,
+          surcharge_percentage: surchargePercentage,
+        })
+        .eq('id', businessId)
+      flash('Payment settings saved')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleBulkPrice() {
     if (!bulkValue || parseFloat(bulkValue) === 0) return
     setSaving(true)
@@ -199,6 +219,47 @@ export default function SettingsPage() {
           <button onClick={saveBranding} disabled={saving}
             className="w-full py-3 bg-[#0E1117] text-white font-bold text-sm rounded-lg hover:bg-[#4F8EF7] transition-colors disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Branding'}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm mb-6">
+        <div className="px-6 py-4 border-b border-[#DDE1EC]">
+          <h2 className="font-semibold text-[#0E1117]">Payment Settings</h2>
+          <p className="text-xs text-[#6B7490] mt-0.5">Control optional card surcharge on customer checkout.</p>
+        </div>
+        <div className="p-6 space-y-4">
+          <label className="flex items-center gap-3 text-sm font-medium text-[#0E1117]">
+            <input
+              type="checkbox"
+              checked={surchargeEnabled}
+              onChange={e => setSurchargeEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-[#DDE1EC] text-blue-500 focus:ring-blue-500"
+            />
+            Enable card surcharge
+          </label>
+
+          {surchargeEnabled && (
+            <div className="space-y-2">
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490]">Surcharge percentage</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={surchargePercentage}
+                  onChange={e => setSurchargePercentage(parseFloat(e.target.value) || 0)}
+                  className="w-24 px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] bg-[#F8F9FC] outline-none focus:border-[#4F8EF7]"
+                />
+                <span className="text-sm text-[#6B7490]">%</span>
+              </div>
+            </div>
+          )}
+
+          <p className="text-sm text-[#6B7490]">When enabled, a surcharge is added to the customer's total at checkout to offset card processing fees.</p>
+          <button onClick={savePaymentSettings} disabled={saving}
+            className="w-full py-3 bg-[#0E1117] text-white font-bold text-sm rounded-lg hover:bg-[#4F8EF7] transition-colors disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Payment Settings'}
           </button>
         </div>
       </div>

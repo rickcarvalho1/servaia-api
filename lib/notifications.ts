@@ -85,17 +85,20 @@ export function buildSMSReceipt({
   businessName,
   serviceNames,
   totalDollars,
+  surchargeAmount,
   jobId,
 }: {
   customerName: string;
   businessName: string;
   serviceNames: string;
   totalDollars: string;
+  surchargeAmount?: number;
   jobId: string;
 }): string {
   return (
     `Hi ${customerName}, your ${businessName} service is complete.\n\n` +
     `Services: ${serviceNames}\n` +
+    (surchargeAmount && surchargeAmount > 0 ? `Card surcharge: $${surchargeAmount.toFixed(2)}\n` : '') +
     `Total charged: $${totalDollars}\n\n` +
     `Thank you for your business!`
   );

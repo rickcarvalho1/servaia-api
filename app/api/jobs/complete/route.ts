@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // Get customer with business
     const { data: customer, error: custErr } = await supabase
       .from('customers')
-      .select('*, service_companies(id, name)')
+      .select('*, service_companies(id, name, surcharge_enabled, surcharge_percentage)')
       .eq('id', customerId)
       .single()
 
@@ -56,11 +56,17 @@ export async function POST(request: Request) {
     }
 
     const serviceNames = services.map((s: any) => s.name).join(', ')
-    const totalDollars = (totalCents / 100).toFixed(2)
+    const surchargeEnabled = !!(customer.service_companies as any)?.surcharge_enabled
+    const surchargePercentage = parseFloat((customer.service_companies as any)?.surcharge_percentage || 0)
+    const surchargeAmountCents = surchargeEnabled
+      ? Math.round(totalCents * (surchargePercentage / 100))
+      : 0
+    const totalWithSurchargeCents = totalCents + surchargeAmountCents
+    const totalDollars = (totalWithSurchargeCents / 100).toFixed(2)
 
     // Charge the card
     const paymentIntent = await stripe.paymentIntents.create({
-      amount:         totalCents,
+      amount:         totalWithSurchargeCents,
       currency:       'usd',
       customer:       customer.stripe_customer_id,
       payment_method: customer.stripe_payment_method,
@@ -91,7 +97,7 @@ export async function POST(request: Request) {
         customer_id:      customerId,
         stripe_charge_id: paymentIntent.id,
         amount:           parseFloat(totalDollars),
-        
+        surcharge_amount: surchargeAmountCents / 100,
         payment_status:   'charged',
         crew_member:      crewMember || null,
         notes:            notes || null,
@@ -137,6 +143,7 @@ export async function POST(request: Request) {
         businessName,
         serviceNames,
         totalDollars,
+        surchargeAmount: surchargeAmountCents / 100,
         jobId: job?.id || '',
       })
 
@@ -150,6 +157,13 @@ export async function POST(request: Request) {
         name:  s.name,
         price: parseFloat(s.price).toFixed(2),
       }))
+
+      if (surchargeAmountCents > 0) {
+        serviceLines.push({
+          name:  'Card surcharge',
+          price: (surchargeAmountCents / 100).toFixed(2),
+        })
+      }
 
       const emailHtml = buildEmailReceipt({
         customerName,

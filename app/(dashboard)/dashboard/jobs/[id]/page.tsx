@@ -17,6 +17,7 @@ export default async function JobDetailPage({
   const { data: job, error } = await supabase
     .from('payments')
     .select('*, customers(id, full_name, name, email, phone, address), job_services!job_services_job_id_fkey(id, name, price_charged, is_custom), photos(id, storage_path, taken_at, crew_member, gps_lat, gps_lng)')
+    .eq('id', id)
     .single()
 
   if (error || !job) notFound()
@@ -28,6 +29,8 @@ export default async function JobDetailPage({
   const isScheduled = job.job_status === 'scheduled'
   const isCompleted = job.job_status === 'completed'
   const serviceTotal = services.reduce((s: number, sv: any) => s + Number(sv.price_charged), 0)
+  const surchargeAmount = Number(job.surcharge_amount || 0)
+  const finalTotal = serviceTotal + surchargeAmount
 
   const photosWithUrls = photos.map((p: any) => {
     const { data: { publicUrl } } = supabase.storage.from('job-photos').getPublicUrl(p.storage_path)
@@ -127,9 +130,21 @@ export default async function JobDetailPage({
             </span>
           </div>
         ))}
-        <div className="flex items-center justify-between pt-3">
-          <span className="text-sm font-bold text-[#0E1117]">Total</span>
-          <span className="text-sm font-bold font-mono text-[#3DBF7F]">${serviceTotal.toFixed(2)}</span>
+        <div className="space-y-2 pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[#0E1117]">Service total</span>
+            <span className="text-sm font-mono text-[#0E1117]">${serviceTotal.toFixed(2)}</span>
+          </div>
+          {surchargeAmount > 0 && (
+            <div className="flex items-center justify-between text-sm text-[#6B7490]">
+              <span>Card surcharge</span>
+              <span className="font-mono">${surchargeAmount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between border-t border-[#DDE1EC] pt-3">
+            <span className="text-sm font-bold text-[#0E1117]">Total</span>
+            <span className="text-sm font-bold font-mono text-[#3DBF7F]">${finalTotal.toFixed(2)}</span>
+          </div>
         </div>
         {job.notes && (
           <div className="mt-4 pt-4 border-t border-[#DDE1EC]">
