@@ -42,7 +42,7 @@ type Service = {
 type PriceOverride = {
   id: string;
   service_id: string;
-  custom_price: number;
+  price: number;
 };
 
 export default function CustomerDetailPage() {
@@ -144,7 +144,7 @@ export default function CustomerDetailPage() {
 
     const map: Record<string, string> = {};
     (ovr ?? []).forEach((o) => {
-      map[o.service_id] = o.custom_price.toString();
+      map[o.service_id] = o.price.toString();
     });
     setLocalOverrides(map);
   }, [customerId, supabase]);
@@ -240,7 +240,7 @@ export default function CustomerDetailPage() {
       .map(([serviceId, val]) => ({
         customer_id: customerId,
         service_id: serviceId,
-        custom_price: parseFloat(val),
+        price: parseFloat(val),
       }));
 
     if (toInsert.length > 0) {
