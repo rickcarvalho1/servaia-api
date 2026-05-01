@@ -14,8 +14,9 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .single()
 
-  if (!member) redirect('/login')
+  if (!member || !(member.service_companies as any)?.id) redirect('/login')
   const businessId = (member.service_companies as any).id
+  const firstName = member.full_name?.split(' ')[0] || 'there'
 
   try {
     const [
@@ -39,12 +40,17 @@ export default async function DashboardPage() {
     if (todayJobsError) console.error('Today jobs query error:', todayJobsError)
     if (pendingCardsError) console.error('Pending cards query error:', pendingCardsError)
 
-    const totalCustomers   = customers?.length || 0
-    const authorizedCards  = customers?.filter(c => c.card_status === 'authorized').length || 0
-    const pendingCardCount = pendingCards?.length || 0
-    const todayRevenue     = todayJobs?.reduce((s, j) => s + Number(j.amount), 0) || 0
-    const totalRevenue     = jobs?.filter(j => j.payment_status === 'charged').reduce((s, j) => s + Number(j.amount), 0) || 0
-    const totalJobs        = jobs?.length || 0
+    const customersList  = Array.isArray(customers) ? customers : []
+    const jobsList       = Array.isArray(jobs) ? jobs : []
+    const todayJobsList  = Array.isArray(todayJobs) ? todayJobs : []
+    const pendingCardsList = Array.isArray(pendingCards) ? pendingCards : []
+
+    const totalCustomers   = customersList.length
+    const authorizedCards  = customersList.filter(c => c.card_status === 'authorized').length
+    const pendingCardCount = pendingCardsList.length
+    const todayRevenue     = todayJobsList.reduce((s, j) => s + Number(j.amount || 0), 0)
+    const totalRevenue     = jobsList.filter(j => j.payment_status === 'charged').reduce((s, j) => s + Number(j.amount || 0), 0)
+    const totalJobs        = jobsList.length
 
     const stats = [
       { label: "Today's Revenue", value: `$${todayRevenue.toFixed(2)}`, icon: DollarSign, color: '#3DBF7F', bg: 'rgba(61,191,127,0.1)', change: 'Today' },
@@ -74,7 +80,7 @@ export default async function DashboardPage() {
         <div>
           <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
               className="text-2xl lg:text-3xl font-bold tracking-tight text-[#0E1117]">
-            Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}, {member.full_name.split(' ')[0]} 👋
+            Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}, {firstName} 👋
           </h1>
           <p className="text-sm mt-1" style={{ color: '#6B7490' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}

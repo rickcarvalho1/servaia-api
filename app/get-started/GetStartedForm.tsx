@@ -16,6 +16,7 @@ const INDUSTRIES = [
   'Window Cleaning',
   'Gutter Cleaning',
   'Roofing',
+  'Hardscaping',
   'Pest Control',
   'Carpet Cleaning',
   'House Cleaning / Maid Service',

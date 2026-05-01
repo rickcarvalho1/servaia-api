@@ -31,8 +31,8 @@ async function sendSMSReceipt({ phone, customerName, businessName, serviceNames,
 
 async function sendEmailReceipt({ email, customerName, businessName, services, totalDollars, surchargeAmount }: any) {
   const resendKey = process.env.RESEND_API_KEY
-  const fromDomain = process.env.RESEND_FROM_DOMAIN
-  if (!resendKey || !fromDomain) return false
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'rick@servaiapay.com'
+  if (!resendKey) return false
 
   const lineItemsHTML = services.map((s: any) => `
     <tr>
@@ -78,7 +78,7 @@ async function sendEmailReceipt({ email, customerName, businessName, services, t
     method: 'POST',
     headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: `${businessName} <noreply@${fromDomain}>`,
+      from: `${businessName} <${fromEmail}>`,
       to: [email],
       subject: `Your receipt from ${businessName} — $${totalDollars}`,
       html,

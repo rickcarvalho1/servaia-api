@@ -23,17 +23,11 @@ const PRESETS = {
     { name: 'Duct Cleaning', emoji: '💨', unit: 'service', default_price: 200 },
     { name: 'Thermostat Installation', emoji: '🌡️', unit: 'service', default_price: 100 },
   ],
-  Pizza: [
-    { name: 'Large Pepperoni Pizza', emoji: '🍕', unit: 'item', default_price: 18 },
-    { name: 'Family Size Pizza', emoji: '🍕', unit: 'item', default_price: 25 },
-    { name: 'Garlic Knots', emoji: '🥖', unit: 'dozen', default_price: 6 },
-    { name: 'Delivery Fee', emoji: '🚚', unit: 'service', default_price: 3 },
-  ],
-  'Med Spa': [
-    { name: 'Botox Treatment', emoji: '💉', unit: 'treatment', default_price: 400 },
-    { name: 'Facial', emoji: '🧴', unit: 'session', default_price: 150 },
-    { name: 'Laser Hair Removal', emoji: '⚡', unit: 'session', default_price: 200 },
-    { name: 'Chemical Peel', emoji: '🧼', unit: 'treatment', default_price: 120 },
+  Plumbing: [
+    { name: 'Leak Repair', emoji: '🔧', unit: 'service', default_price: 180 },
+    { name: 'Drain Cleaning', emoji: '🚿', unit: 'service', default_price: 140 },
+    { name: 'Water Heater Install', emoji: '🔥', unit: 'service', default_price: 950 },
+    { name: 'Toilet Replacement', emoji: '🚽', unit: 'service', default_price: 230 },
   ],
   'Auto Detail': [
     { name: 'Full Interior Detail', emoji: '🧽', unit: 'service', default_price: 150 },
@@ -46,6 +40,20 @@ const PRESETS = {
     { name: 'Tree Trimming', emoji: '🌳', unit: 'service', default_price: 150 },
     { name: 'Garden Maintenance', emoji: '🌺', unit: 'visit', default_price: 100 },
     { name: 'Snow Removal', emoji: '❄️', unit: 'service', default_price: 80 },
+  ],
+  'Pest Control': [
+    { name: 'Termite Inspection', emoji: '🐜', unit: 'service', default_price: 180 },
+    { name: 'Mosquito Treatment', emoji: '🦟', unit: 'visit', default_price: 120 },
+    { name: 'Rodent Exclusion', emoji: '🐭', unit: 'service', default_price: 220 },
+    { name: 'Seasonal Preventive Service', emoji: '🍂', unit: 'subscription', default_price: 95 },
+  ],
+  Hardscaping: [
+    { name: 'Patio Installation', emoji: '🪨', unit: 'project', default_price: 2800 },
+    { name: 'Retaining Wall', emoji: '🧱', unit: 'project', default_price: 3200 },
+    { name: 'Walkway', emoji: '🧭', unit: 'project', default_price: 1400 },
+    { name: 'Fire Pit', emoji: '🔥', unit: 'project', default_price: 1800 },
+    { name: 'Steps', emoji: '🪜', unit: 'project', default_price: 900 },
+    { name: 'Driveway Pavers', emoji: '🚧', unit: 'project', default_price: 4200 },
   ],
 }
 

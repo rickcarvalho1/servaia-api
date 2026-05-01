@@ -15,12 +15,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('active', true)
     .single()
 
-  if (!member) redirect('/login')
+  if (!member || !member.service_companies) redirect('/login')
 
-  const stripeStatus = member.service_companies.stripe_connect_status || 'pending'
+  const company = member.service_companies
+  const stripeStatus = company.stripe_connect_status || 'pending'
   const stripeConnected = stripeStatus === 'active'
 
-  const trialEndsAt = member.service_companies.trial_ends_at ? new Date(member.service_companies.trial_ends_at) : null
+  const trialEndsAt = company.trial_ends_at ? new Date(company.trial_ends_at) : null
   const daysUntilTrialEnd = trialEndsAt
     ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
@@ -29,12 +30,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const appUser = {
     id:           user.id,
-    email:        user.email!,
-    businessId:   member.service_companies.id,
-    businessName: member.service_companies.company_name || member.service_companies.name,
-    logoUrl:      member.service_companies.logo_url,
-    fullName:     member.full_name,
-    role:         member.role,
+    email:        user.email || '',
+    businessId:   company.id,
+    businessName: company.company_name || company.name || 'Your business',
+    logoUrl:      company.logo_url || undefined,
+    fullName:     member.full_name || user.email || 'User',
+    role:         member.role || 'member',
     stripeConnectStatus: stripeStatus,
   }
 

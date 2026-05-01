@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     try {
       await resend.emails.send({
-        from: 'invites@servaiapay.com',
+        from: process.env.RESEND_FROM_EMAIL || 'rick@servaiapay.com',
         to: email,
         subject: `You're invited to join ${businessName} on Servaia`,
         html: `
