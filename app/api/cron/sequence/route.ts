@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createAdminClient } from '@/lib/supabase/server'
 import twilio from 'twilio'
 import { Resend } from 'resend'
 
@@ -31,7 +30,7 @@ const DAY2_MESSAGES: Record<string, string> = {
 }
 
 const DAY5_SUBJECTS: Record<string, string> = {
-  'Landscaping': 'Florida landscapers are getting paid same day — here\'s how',
+  'Landscaping': "Florida landscapers are getting paid same day — here's how",
   'Hardscaping': 'Get paid the day you finish the job — no invoice needed',
   'HVAC': 'Your techs finish the job — Servaia collects the money automatically',
   'Electrical': 'Stop waiting 2 weeks to get paid on big electrical jobs',
@@ -74,7 +73,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = createRouteHandlerClient({ cookies })
+  const supabase = await createAdminClient()
   const now = new Date()
 
   const { data: prospects } = await supabase

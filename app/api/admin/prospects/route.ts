@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createAdminClient } from '@/lib/supabase/server'
 import twilio from 'twilio'
 import { Resend } from 'resend'
 
@@ -27,9 +26,9 @@ const DAY0_MESSAGES: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies })
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createAdminClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user || user.email !== 'rickcarvalho1@gmail.com') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -90,9 +89,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies })
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createAdminClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user || user.email !== 'rickcarvalho1@gmail.com') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
