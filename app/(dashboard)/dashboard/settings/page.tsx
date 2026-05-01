@@ -25,7 +25,6 @@ export default function SettingsPage() {
   const [bulkValue, setBulkValue]   = useState('')
   const [bulkScope, setBulkScope]   = useState<'all' | 'defaults'>('all')
 
-  // Role names
   const [roleNameOwner, setRoleNameOwner]     = useState('Owner')
   const [roleNameManager, setRoleNameManager] = useState('Manager')
   const [roleNameTech, setRoleNameTech]       = useState('Field Tech')
@@ -50,11 +49,7 @@ export default function SettingsPage() {
       setRoleNameOwner(biz.role_name_owner || 'Owner')
       setRoleNameManager(biz.role_name_manager || 'Manager')
       setRoleNameTech(biz.role_name_tech || 'Field Tech')
-      const { data } = await supabase
-        .from('services')
-        .select('*')
-        .eq('business_id', biz.id)
-        .order('sort_order')
+      const { data } = await supabase.from('services').select('*').eq('business_id', biz.id).order('sort_order')
       setServices(data || [])
       setLoading(false)
     }
@@ -71,22 +66,13 @@ export default function SettingsPage() {
     try {
       for (const svc of services) {
         if (svc.id.startsWith('new_')) {
-          await supabase.from('services').insert({
-            business_id: businessId, name: svc.name, emoji: svc.emoji,
-            unit: svc.unit, default_price: svc.default_price,
-            active: svc.active, sort_order: svc.sort_order,
-          })
+          await supabase.from('services').insert({ business_id: businessId, name: svc.name, emoji: svc.emoji, unit: svc.unit, default_price: svc.default_price, active: svc.active, sort_order: svc.sort_order })
         } else {
-          await supabase.from('services').update({
-            name: svc.name, emoji: svc.emoji, unit: svc.unit,
-            default_price: svc.default_price, active: svc.active,
-          }).eq('id', svc.id)
+          await supabase.from('services').update({ name: svc.name, emoji: svc.emoji, unit: svc.unit, default_price: svc.default_price, active: svc.active }).eq('id', svc.id)
         }
       }
       flash('Services saved')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   async function deleteService(id: string) {
@@ -96,11 +82,7 @@ export default function SettingsPage() {
   }
 
   function addService() {
-    setServices(prev => [...prev, {
-      id: `new_${Date.now()}`, business_id: businessId,
-      name: '', emoji: '🔧', unit: 'visit', default_price: 0,
-      active: true, sort_order: prev.length, created_at: new Date().toISOString(),
-    }])
+    setServices(prev => [...prev, { id: `new_${Date.now()}`, business_id: businessId, name: '', emoji: '🔧', unit: 'visit', default_price: 0, active: true, sort_order: prev.length, created_at: new Date().toISOString() }])
   }
 
   function updateService(id: string, field: string, value: any) {
@@ -114,81 +96,46 @@ export default function SettingsPage() {
     try {
       const fileExt = file.name.split('.').pop()
       const fileName = `${businessId}_${Date.now()}.${fileExt}`
-      const { data, error } = await supabase.storage
-        .from('company-logos')
-        .upload(fileName, file)
+      const { error } = await supabase.storage.from('company-logos').upload(fileName, file)
       if (error) throw error
-      const { data: { publicUrl } } = supabase.storage
-        .from('company-logos')
-        .getPublicUrl(fileName)
-      await supabase
-        .from('service_companies')
-        .update({ logo_url: publicUrl })
-        .eq('id', businessId)
+      const { data: { publicUrl } } = supabase.storage.from('company-logos').getPublicUrl(fileName)
+      await supabase.from('service_companies').update({ logo_url: publicUrl }).eq('id', businessId)
       setLogoUrl(publicUrl)
       flash('Logo uploaded')
     } catch (err: any) {
       alert('Upload failed: ' + err.message)
-    } finally {
-      setUploadingLogo(false)
-    }
+    } finally { setUploadingLogo(false) }
   }
 
   async function saveBranding() {
     setSaving(true)
     try {
-      await supabase
-        .from('service_companies')
-        .update({ company_name: companyName })
-        .eq('id', businessId)
+      await supabase.from('service_companies').update({ company_name: companyName }).eq('id', businessId)
       flash('Branding saved')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   async function savePaymentSettings() {
     setSaving(true)
     try {
-      await supabase
-        .from('service_companies')
-        .update({
-          surcharge_enabled: surchargeEnabled,
-          surcharge_percentage: surchargePercentage,
-        })
-        .eq('id', businessId)
+      await supabase.from('service_companies').update({ surcharge_enabled: surchargeEnabled, surcharge_percentage: surchargePercentage }).eq('id', businessId)
       flash('Payment settings saved')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   async function saveRoleNames() {
     setSaving(true)
     try {
-      await supabase
-        .from('service_companies')
-        .update({
-          role_name_owner:   roleNameOwner || 'Owner',
-          role_name_manager: roleNameManager || 'Manager',
-          role_name_tech:    roleNameTech || 'Field Tech',
-        })
-        .eq('id', businessId)
+      await supabase.from('service_companies').update({ role_name_owner: roleNameOwner || 'Owner', role_name_manager: roleNameManager || 'Manager', role_name_tech: roleNameTech || 'Field Tech' }).eq('id', businessId)
       flash('Role names saved')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   async function handleBulkPrice() {
     if (!bulkValue || parseFloat(bulkValue) === 0) return
     setSaving(true)
     try {
-      const res = await fetch('/api/services/bulk-price', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessId, type: bulkType, value: parseFloat(bulkValue), scope: bulkScope }),
-      })
+      const res = await fetch('/api/services/bulk-price', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ businessId, type: bulkType, value: parseFloat(bulkValue), scope: bulkScope }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       const { data: updated } = await supabase.from('services').select('*').eq('business_id', businessId).order('sort_order')
@@ -196,9 +143,7 @@ export default function SettingsPage() {
       setShowBulk(false)
       setBulkValue('')
       flash(data.message || 'Prices updated')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   if (loading) return <div className="p-8 text-[#6B7490] text-sm">Loading settings...</div>
@@ -207,8 +152,7 @@ export default function SettingsPage() {
     <div className="p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#0E1117]"
-              style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}>Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0E1117]" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}>Settings</h1>
           <p className="text-sm mt-1 text-[#6B7490]">{bizName}</p>
         </div>
       </div>
@@ -233,11 +177,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Logo</label>
-            {logoUrl && (
-              <div className="mb-3">
-                <img src={logoUrl} alt="Company logo" className="h-16 w-16 rounded-lg object-cover border border-[#DDE1EC]" />
-              </div>
-            )}
+            {logoUrl && <div className="mb-3"><img src={logoUrl} alt="Company logo" className="h-16 w-16 rounded-lg object-cover border border-[#DDE1EC]" /></div>}
             <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo}
               className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#4F8EF7] file:text-white hover:file:bg-[#3B82F6]" />
             {uploadingLogo && <p className="text-xs text-[#6B7490] mt-1">Uploading...</p>}
@@ -258,42 +198,21 @@ export default function SettingsPage() {
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
-                Owner Role
-              </label>
-              <input
-                type="text"
-                value={roleNameOwner}
-                onChange={e => setRoleNameOwner(e.target.value)}
-                placeholder="Owner"
-                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
-              />
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Owner Role</label>
+              <input type="text" value={roleNameOwner} onChange={e => setRoleNameOwner(e.target.value)} placeholder="Owner"
+                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
               <p className="text-xs text-[#6B7490] mt-1">e.g. Boss, Director, Principal</p>
             </div>
             <div>
-              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
-                Manager Role
-              </label>
-              <input
-                type="text"
-                value={roleNameManager}
-                onChange={e => setRoleNameManager(e.target.value)}
-                placeholder="Manager"
-                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
-              />
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Manager Role</label>
+              <input type="text" value={roleNameManager} onChange={e => setRoleNameManager(e.target.value)} placeholder="Manager"
+                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
               <p className="text-xs text-[#6B7490] mt-1">e.g. Foreman, Supervisor, Lead</p>
             </div>
             <div>
-              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
-                Field Tech Role
-              </label>
-              <input
-                type="text"
-                value={roleNameTech}
-                onChange={e => setRoleNameTech(e.target.value)}
-                placeholder="Field Tech"
-                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
-              />
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Field Tech Role</label>
+              <input type="text" value={roleNameTech} onChange={e => setRoleNameTech(e.target.value)} placeholder="Field Tech"
+                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
               <p className="text-xs text-[#6B7490] mt-1">e.g. Crew, Technician, Installer</p>
             </div>
           </div>
@@ -312,24 +231,16 @@ export default function SettingsPage() {
         </div>
         <div className="p-6 space-y-4">
           <label className="flex items-center gap-3 text-sm font-medium text-[#0E1117]">
-            <input
-              type="checkbox"
-              checked={surchargeEnabled}
-              onChange={e => setSurchargeEnabled(e.target.checked)}
-              className="h-4 w-4 rounded border-[#DDE1EC] text-blue-500 focus:ring-blue-500"
-            />
+            <input type="checkbox" checked={surchargeEnabled} onChange={e => setSurchargeEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-[#DDE1EC] text-blue-500 focus:ring-blue-500" />
             Enable card surcharge
           </label>
           {surchargeEnabled && (
             <div className="space-y-2">
               <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490]">Surcharge percentage</label>
               <div className="flex items-center gap-3">
-                <input
-                  type="number" step="0.1" min="0"
-                  value={surchargePercentage}
-                  onChange={e => setSurchargePercentage(parseFloat(e.target.value) || 0)}
-                  className="w-24 px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] bg-[#F8F9FC] outline-none focus:border-[#4F8EF7]"
-                />
+                <input type="number" step="0.1" min="0" value={surchargePercentage} onChange={e => setSurchargePercentage(parseFloat(e.target.value) || 0)}
+                  className="w-24 px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] bg-[#F8F9FC] outline-none focus:border-[#4F8EF7]" />
                 <span className="text-sm text-[#6B7490]">%</span>
               </div>
             </div>
@@ -352,7 +263,7 @@ export default function SettingsPage() {
           <div className="flex gap-2">
             <button onClick={() => setShowBulk(true)}
               className="flex items-center gap-1.5 px-3 py-2 border border-[#DDE1EC] text-[#6B7490] text-xs font-semibold rounded-lg hover:bg-[#F8F9FC]">
-              <TrendingUp size={13} /> Bulk Price Change
+              <TrendingUp size={13} /> Change All Prices
             </button>
             <button onClick={addService}
               className="flex items-center gap-1.5 px-3 py-2 bg-[#F8F9FC] border border-[#DDE1EC] text-[#0E1117] text-xs font-semibold rounded-lg hover:bg-[#DDE1EC]">
@@ -368,13 +279,11 @@ export default function SettingsPage() {
                 className="w-12 text-xl bg-[#F8F9FC] border border-[#DDE1EC] rounded-lg text-center outline-none focus:border-[#4F8EF7] py-1.5 cursor-pointer">
                 {EMOJIS.map(em => <option key={em} value={em}>{em}</option>)}
               </select>
-              <input type="text" value={svc.name} onChange={e => updateService(svc.id, 'name', e.target.value)}
-                placeholder="Service name"
+              <input type="text" value={svc.name} onChange={e => updateService(svc.id, 'name', e.target.value)} placeholder="Service name"
                 className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
               <div className="flex items-center gap-1">
                 <span className="text-[#6B7490] text-sm">$</span>
-                <input type="number" value={svc.default_price}
-                  onChange={e => updateService(svc.id, 'default_price', parseFloat(e.target.value) || 0)}
+                <input type="number" value={svc.default_price} onChange={e => updateService(svc.id, 'default_price', parseFloat(e.target.value) || 0)}
                   className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] font-mono" />
               </div>
               <select value={svc.unit} onChange={e => updateService(svc.id, 'unit', e.target.value)}
@@ -383,8 +292,7 @@ export default function SettingsPage() {
               </select>
               <button onClick={() => updateService(svc.id, 'active', !svc.active)}
                 className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${svc.active ? 'bg-[#3DBF7F]' : 'bg-[#DDE1EC]'}`} />
-              <button onClick={() => deleteService(svc.id)}
-                className="text-[#6B7490] hover:text-[#E05252] transition-colors flex-shrink-0">
+              <button onClick={() => deleteService(svc.id)} className="text-[#6B7490] hover:text-[#E05252] transition-colors flex-shrink-0">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -403,20 +311,17 @@ export default function SettingsPage() {
       {showBulk && (
         <div className="fixed inset-0 bg-[#0E1117]/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-xl font-bold text-[#0E1117] mb-1"
-                style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}>
-              Bulk Price Change
+            <h3 className="text-xl font-bold text-[#0E1117] mb-1" style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}>
+              Change All Prices
             </h3>
-            <p className="text-sm text-[#6B7490] mb-5">Raise or lower all prices at once.</p>
+            <p className="text-sm text-[#6B7490] mb-5">Raise or lower all default prices at once. Use a negative number to decrease.</p>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Change Type</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(['pct', 'flat'] as const).map(t => (
                     <button key={t} type="button" onClick={() => setBulkType(t)}
-                      className={`py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                        bulkType === t ? 'border-[#4F8EF7] bg-[rgba(79,142,247,0.1)] text-[#4F8EF7]' : 'border-[#DDE1EC] text-[#6B7490]'
-                      }`}>
+                      className={`py-2.5 rounded-lg text-sm font-semibold border transition-all ${bulkType === t ? 'border-[#4F8EF7] bg-[rgba(79,142,247,0.1)] text-[#4F8EF7]' : 'border-[#DDE1EC] text-[#6B7490]'}`}>
                       {t === 'pct' ? '% Percentage' : '$ Flat Amount'}
                     </button>
                   ))}
@@ -424,10 +329,10 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
-                  {bulkType === 'pct' ? 'Percentage (e.g. 10 for +10%)' : 'Dollar amount (e.g. 5 for +$5)'}
+                  {bulkType === 'pct' ? 'Percentage (e.g. 10 for +10%, -10 for -10%)' : 'Dollar amount (e.g. 5 for +$5, -5 for -$5)'}
                 </label>
                 <input type="number" value={bulkValue} onChange={e => setBulkValue(e.target.value)}
-                  placeholder={bulkType === 'pct' ? '10' : '5'}
+                  placeholder={bulkType === 'pct' ? 'e.g. 10 or -10' : 'e.g. 5 or -5'}
                   className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
               </div>
               <div>
@@ -435,9 +340,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   {([['all', 'Everyone'], ['defaults', 'Defaults only']] as const).map(([val, label]) => (
                     <button key={val} type="button" onClick={() => setBulkScope(val as any)}
-                      className={`py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                        bulkScope === val ? 'border-[#4F8EF7] bg-[rgba(79,142,247,0.1)] text-[#4F8EF7]' : 'border-[#DDE1EC] text-[#6B7490]'
-                      }`}>
+                      className={`py-2.5 rounded-lg text-sm font-semibold border transition-all ${bulkScope === val ? 'border-[#4F8EF7] bg-[rgba(79,142,247,0.1)] text-[#4F8EF7]' : 'border-[#DDE1EC] text-[#6B7490]'}`}>
                       {label}
                     </button>
                   ))}
