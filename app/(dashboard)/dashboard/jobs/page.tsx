@@ -49,7 +49,7 @@ export default function JobsPage() {
       const res = await fetch('/api/jobs/complete-scheduled', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, crewMember: 'Owner' }),
+        body: JSON.stringify({ jobId, crewMember: 'Owner', paymentNote: '' }),
       })
       const data = await res.json()
       if (!res.ok) {
