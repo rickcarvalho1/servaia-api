@@ -44,6 +44,7 @@ export default async function DashboardPage() {
     const pendingCardCount = pendingCards?.length || 0
     const todayRevenue     = todayJobs?.reduce((s, j) => s + Number(j.amount), 0) || 0
     const totalRevenue     = jobs?.filter(j => j.payment_status === 'charged').reduce((s, j) => s + Number(j.amount), 0) || 0
+    const totalJobs        = jobs?.length || 0
 
     const stats = [
       { label: "Today's Revenue", value: `$${todayRevenue.toFixed(2)}`, icon: DollarSign, color: '#3DBF7F', bg: 'rgba(61,191,127,0.1)', change: 'Today' },
