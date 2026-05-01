@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { DollarSign, Users, Briefcase, TrendingUp, ArrowUpRight, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import OnboardingChecklist from '@/components/OnboardingChecklist'
 
 type Period = 'today' | 'week' | 'month' | 'year' | 'all'
 
@@ -19,27 +20,20 @@ const PERIODS: { label: string; value: Period }[] = [
 
 function getPeriodStart(period: Period): string | null {
   const now = new Date()
-  if (period === 'today') {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-  }
+  if (period === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
   if (period === 'week') {
     const d = new Date(now)
     d.setDate(d.getDate() - d.getDay())
     d.setHours(0, 0, 0, 0)
     return d.toISOString()
   }
-  if (period === 'month') {
-    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-  }
-  if (period === 'year') {
-    return new Date(now.getFullYear(), 0, 1).toISOString()
-  }
+  if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  if (period === 'year') return new Date(now.getFullYear(), 0, 1).toISOString()
   return null
 }
 
 function buildChartData(payments: any[], period: Period) {
   if (!payments.length) return []
-
   const now = new Date()
   const data: { label: string; revenue: number }[] = []
 
@@ -76,7 +70,6 @@ function buildChartData(payments: any[], period: Period) {
       data.push({ label: months[m], revenue })
     }
   }
-
   return data
 }
 
@@ -86,6 +79,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [firstName, setFirstName] = useState('there')
   const [businessId, setBusinessId] = useState('')
+  const [companyData, setCompanyData] = useState<any>(null)
   const [period, setPeriod] = useState<Period>('month')
 
   const [allPayments, setAllPayments] = useState<any[]>([])
@@ -117,6 +111,7 @@ export default function DashboardPage() {
       { data: jobs },
       { data: custs },
       { data: pending },
+      { data: coData },
     ] = await Promise.all([
       supabase.from('payments').select('id, amount, payment_status, completed_at')
         .eq('business_id', bizId)
@@ -125,16 +120,17 @@ export default function DashboardPage() {
         .eq('business_id', bizId).order('completed_at', { ascending: false }).limit(10),
       supabase.from('customers').select('id, card_status').eq('business_id', bizId),
       supabase.from('customers').select('id, full_name').eq('business_id', bizId).eq('card_status', 'pending'),
+      supabase.from('service_companies').select('stripe_connect_status, onboarding_dismissed').eq('id', bizId).single(),
     ])
 
     setAllPayments(pays || [])
     setRecentJobs(jobs || [])
     setCustomers(custs || [])
     setPendingCards(pending || [])
+    setCompanyData(coData)
     setLoading(false)
   }
 
-  // Filter payments by period
   const periodStart = getPeriodStart(period)
   const filteredPayments = periodStart
     ? allPayments.filter(p => p.completed_at && new Date(p.completed_at) >= new Date(periodStart))
@@ -147,7 +143,6 @@ export default function DashboardPage() {
   const authorizedCards = customers.filter(c => c.card_status === 'authorized' || c.card_status === 'active').length
   const pendingCardCount = pendingCards.length
 
-  // Best customer
   const customerTotals: Record<string, { name: string; total: number }> = {}
   recentJobs.forEach(j => {
     const name = (j.customers as any)?.full_name || 'Unknown'
@@ -158,7 +153,6 @@ export default function DashboardPage() {
 
   const chartData = buildChartData(filteredPayments, period)
   const hasChartData = chartData.some(d => d.revenue > 0)
-
   const periodLabel = PERIODS.find(p => p.value === period)?.label || 'This Month'
 
   if (loading) return (
@@ -188,6 +182,11 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {/* Onboarding checklist */}
+      {businessId && (
+        <OnboardingChecklist businessId={businessId} companyData={companyData} />
+      )}
+
       {/* Pending cards alert */}
       {pendingCardCount > 0 && (
         <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl text-sm"
@@ -211,9 +210,7 @@ export default function DashboardPage() {
         {PERIODS.map(p => (
           <button key={p.value} onClick={() => setPeriod(p.value)}
             className={`flex-1 min-w-fit px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-              period === p.value
-                ? 'bg-[#0E1117] text-white'
-                : 'text-[#6B7490] hover:text-[#0E1117] hover:bg-gray-50'
+              period === p.value ? 'bg-[#0E1117] text-white' : 'text-[#6B7490] hover:text-[#0E1117] hover:bg-gray-50'
             }`}>
             {p.label}
           </button>
@@ -351,8 +348,8 @@ export default function DashboardPage() {
                     className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                     style={{ borderBottom: '1px solid #DDE1EC' }}>
                     {(job.payment_status === 'charged' || job.payment_status === 'succeeded') && <CheckCircle2 size={14} style={{ color: '#3DBF7F', flexShrink: 0 }} />}
-                    {job.payment_status === 'failed'    && <AlertCircle size={14} style={{ color: '#E05252', flexShrink: 0 }} />}
-                    {job.payment_status === 'pending'   && <Clock size={14} style={{ color: '#E8A020', flexShrink: 0 }} />}
+                    {job.payment_status === 'failed' && <AlertCircle size={14} style={{ color: '#E05252', flexShrink: 0 }} />}
+                    {job.payment_status === 'pending' && <Clock size={14} style={{ color: '#E8A020', flexShrink: 0 }} />}
                     {job.payment_status === 'manual_collection' && <DollarSign size={14} style={{ color: '#E8B84B', flexShrink: 0 }} />}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold truncate" style={{ color: '#0E1117' }}>
@@ -384,8 +381,8 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {(job.payment_status === 'charged' || job.payment_status === 'succeeded') && <CheckCircle2 size={14} style={{ color: '#3DBF7F' }} />}
-                        {job.payment_status === 'failed'    && <AlertCircle size={14} style={{ color: '#E05252' }} />}
-                        {job.payment_status === 'pending'   && <Clock size={14} style={{ color: '#E8A020' }} />}
+                        {job.payment_status === 'failed' && <AlertCircle size={14} style={{ color: '#E05252' }} />}
+                        {job.payment_status === 'pending' && <Clock size={14} style={{ color: '#E8A020' }} />}
                         {job.payment_status === 'manual_collection' && <DollarSign size={14} style={{ color: '#E8B84B' }} />}
                       </div>
                     </div>
