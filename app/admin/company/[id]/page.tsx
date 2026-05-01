@@ -11,7 +11,7 @@ export default async function CompanyDashboardPage({ params }: PageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user || user.email !== 'rickcarvalho1@gmail.com') {
+  if (!user || user.email !== 'rick@servaiapay.com') {
     redirect('/login')
   }
 

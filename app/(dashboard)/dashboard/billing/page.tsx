@@ -183,10 +183,10 @@ export default function BillingPage() {
             {company.subscription_status === 'trial' && (
               <button
                 onClick={handleUpgrade}
-                disabled={upgrading || trialEnded}
+                disabled={upgrading}
                 className="w-full bg-gold text-ink py-3 rounded-lg font-semibold hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
-                {upgrading ? 'Loading...' : trialEnded ? 'Trial Ended — Upgrade to Continue' : 'Start Subscription Now'}
+                {upgrading ? 'Loading...' : 'Subscribe Now — $49/month'}
               </button>
             )}
 

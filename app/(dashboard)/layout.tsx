@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import DashboardPaywall from '@/components/DashboardPaywall'
 import Sidebar from '@/components/ui/Sidebar'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : null
   const trialEnded = daysUntilTrialEnd !== null && daysUntilTrialEnd < 0
   const trialEndingSoon = daysUntilTrialEnd !== null && daysUntilTrialEnd <= 5 && daysUntilTrialEnd > 0
+  const isSubscriptionActive = company.subscription_status === 'active'
+  const requirePaywall = trialEnded && !isSubscriptionActive
 
   const appUser = {
     id:           user.id,
@@ -37,6 +40,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     fullName:     member.full_name || user.email || 'User',
     role:         member.role || 'member',
     stripeConnectStatus: stripeStatus,
+  }
+
+  if (requirePaywall) {
+    return <DashboardPaywall enabled={requirePaywall} />
   }
 
   return (
@@ -56,14 +63,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <p className="max-w-4xl mx-auto text-sm font-semibold">
               Your trial ends in {daysUntilTrialEnd} days. Subscribe now to keep using Servaia.
               <a href="/dashboard/billing" className="font-bold underline ml-2">View Billing</a>
-            </p>
-          </div>
-        )}
-        {trialEnded && member.service_companies.subscription_status !== 'active' && (
-          <div className="border-b border-danger/30 bg-danger/10 text-danger px-6 py-4">
-            <p className="max-w-4xl mx-auto text-sm font-semibold">
-              Your trial has ended. Subscribe to continue using Servaia.
-              <a href="/dashboard/billing" className="font-bold underline ml-2">Subscribe Now</a>
             </p>
           </div>
         )}
