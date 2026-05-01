@@ -26,9 +26,16 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
+  // If on app subdomain and hitting root, redirect to login or dashboard
+  const host = request.headers.get('host') || ''
+  const isAppSubdomain = host.startsWith('app.')
+  if (pathname === '/' && isAppSubdomain) {
+    return NextResponse.redirect(new URL(user ? '/dashboard' : '/login', request.url))
+  }
+
   // Public routes - no auth needed
-  const publicRoutes = ['/', '/get-started', '/privacy', '/terms', '/login', '/signup', '/authorize', '/api', '/crew']
-  const isPublicRoute = pathname === '/' || publicRoutes.slice(1).some(route => pathname.startsWith(route))
+  const publicRoutes = ['/get-started', '/privacy', '/terms', '/login', '/signup', '/authorize', '/api', '/crew']
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
   // Protected routes - require auth
   const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
@@ -48,13 +55,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|public/).*)',
   ],
 }
