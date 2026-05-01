@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
                 <li>Automatic payment charging</li>
                 <li>Same-day payouts to your bank account</li>
                 <li>Full access to all features</li>
-                <li><strong>$0 in fees</strong> during your trial period</li>
+                <li>No monthly subscription fee during your 30-day trial — you only pay standard transaction fees when you collect payments.</li>
               </ul>
             </div>
 

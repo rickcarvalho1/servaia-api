@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react'
 
@@ -10,6 +11,8 @@ export default function StripeConnectPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [redirecting, setRedirecting] = useState(false)
+  const searchParams = useSearchParams()
+  const success = searchParams.get('success') === 'true'
 
   useEffect(() => {
     async function load() {
@@ -81,6 +84,11 @@ export default function StripeConnectPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6 space-y-6">
+        {success && (
+          <div className="rounded-xl border border-[#DDE8FF] bg-[#EFF6FF] p-4 text-sm text-[#1D4ED8]">
+            Stripe onboarding completed successfully. Your Stripe account status has been updated.
+          </div>
+        )}
         <div className="flex items-center gap-3">
           {connected ? (
             <CheckCircle2 size={20} className="text-[#3DBF7F]" />

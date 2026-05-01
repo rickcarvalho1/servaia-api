@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     }
 
     const origin = getOrigin(request)
-    return NextResponse.redirect(`${origin}/dashboard/settings/stripe-connect`)
+    return NextResponse.redirect(`${origin}/dashboard/settings/stripe-connect?success=true`)
   } catch (err: any) {
     console.error('Stripe Connect callback error:', err)
     return NextResponse.json({ error: err.message || 'Unable to update Stripe status' }, { status: 500 })
