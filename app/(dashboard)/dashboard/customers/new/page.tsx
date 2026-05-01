@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Send } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+
+const PAYMENT_METHODS = [
+  { value: 'card', label: 'Card on File', description: 'Customer saves card — charged automatically on job completion' },
+  { value: 'cash_check', label: 'Cash / Check', description: 'No card needed — collect payment manually after each job' },
+  { value: 'invoice', label: 'Invoice', description: 'No card needed — you handle billing separately' },
+]
 
 export default function NewCustomerPage() {
   const router   = useRouter()
@@ -17,6 +23,7 @@ export default function NewCustomerPage() {
 
   const [form, setForm] = useState({
     full_name: '', phone: '', email: '', address: '', notes: '',
+    payment_method: 'card',
   })
 
   function set(field: string, value: string) {
@@ -41,17 +48,17 @@ export default function NewCustomerPage() {
       if (!member) throw new Error('Business not found')
       const biz = member.service_companies as any
 
-      // Insert customer directly into Supabase
       const { data: customer, error: custErr } = await supabase
         .from('customers')
         .insert({
-          business_id: biz.id,
-          full_name:   form.full_name,
-          phone:       form.phone,
-          email:       form.email || null,
-          address:     form.address || null,
-          notes:       form.notes || null,
-          card_status: 'pending',
+          business_id:    biz.id,
+          full_name:      form.full_name,
+          phone:          form.phone,
+          email:          form.email || null,
+          address:        form.address || null,
+          notes:          form.notes || null,
+          card_status:    form.payment_method === 'card' ? 'pending' : 'not_required',
+          payment_method: form.payment_method,
         })
         .select()
         .single()
@@ -69,6 +76,7 @@ export default function NewCustomerPage() {
   }
 
   if (done && newCustomer) {
+    const isCard = newCustomer.payment_method === 'card'
     return (
       <div className="p-8 max-w-lg mx-auto">
         <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-8 text-center">
@@ -80,11 +88,14 @@ export default function NewCustomerPage() {
             Customer Added!
           </h2>
           <p className="text-[#6B7490] text-sm mb-6">
-            <strong>{newCustomer.full_name}</strong> has been added. Send them an authorization link so they can save their card on file.
+            <strong>{newCustomer.full_name}</strong> has been added
+            {isCard ? ' — send them an authorization link to save their card.' : ' — they pay by ' + (newCustomer.payment_method === 'cash_check' ? 'cash or check' : 'invoice') + '.'}
           </p>
-          <p className="text-xs text-[#6B7490] bg-[#F8F9FC] border border-[#DDE1EC] rounded-lg px-4 py-3 mb-4">
-            📱 Authorization link sending via SMS will be available once Twilio is connected. For now, share the link manually.
-          </p>
+          {isCard && (
+            <p className="text-xs text-[#6B7490] bg-[#F8F9FC] border border-[#DDE1EC] rounded-lg px-4 py-3 mb-4">
+              📱 Send the card authorization link from the customer detail page.
+            </p>
+          )}
           <Link href="/dashboard/customers"
             className="block w-full py-3 bg-[#4F8EF7] text-white text-sm font-bold rounded-lg hover:bg-blue-500 transition-colors mb-3 text-center">
             View All Customers
@@ -110,11 +121,12 @@ export default function NewCustomerPage() {
         Add Customer
       </h1>
       <p className="text-[#6B7490] text-sm mb-8">
-        After adding, send them an authorization link to save their card on file.
+        Add a new customer and choose how they pay.
       </p>
 
       <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
+
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
               Full Name *
@@ -123,6 +135,7 @@ export default function NewCustomerPage() {
               placeholder="Sarah Johnson"
               className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#6B7490]/50 outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] transition-colors" />
           </div>
+
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
               Phone Number *
@@ -131,6 +144,7 @@ export default function NewCustomerPage() {
               placeholder="(555) 000-0000"
               className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#6B7490]/50 outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] transition-colors" />
           </div>
+
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
               Email Address
@@ -139,6 +153,7 @@ export default function NewCustomerPage() {
               placeholder="sarah@email.com"
               className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#6B7490]/50 outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] transition-colors" />
           </div>
+
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
               Service Address
@@ -147,6 +162,41 @@ export default function NewCustomerPage() {
               placeholder="123 Main St, Newton MA 02468"
               className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#6B7490]/50 outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] transition-colors" />
           </div>
+
+          <div>
+            <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
+              How Does This Customer Pay?
+            </label>
+            <div className="space-y-2">
+              {PAYMENT_METHODS.map(pm => (
+                <button
+                  key={pm.value}
+                  type="button"
+                  onClick={() => set('payment_method', pm.value)}
+                  className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                    form.payment_method === pm.value
+                      ? 'border-[#0E1117] bg-[#0E1117]/5'
+                      : 'border-[#DDE1EC] bg-[#F8F9FC] hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                      form.payment_method === pm.value ? 'border-[#0E1117]' : 'border-gray-300'
+                    }`}>
+                      {form.payment_method === pm.value && (
+                        <div className="w-2 h-2 rounded-full bg-[#0E1117]" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[#0E1117]">{pm.label}</p>
+                      <p className="text-xs text-[#6B7490]">{pm.description}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
               Internal Notes
