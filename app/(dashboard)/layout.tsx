@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: member } = await supabase
     .from('team_members')
-    .select('*, service_companies(id, name, company_name, logo_url, trade, stripe_connect_status, trial_ends_at, subscription_status)')
+ .select('*, service_companies(id, name, company_name, logo_url, trade, stripe_connect_status, trial_ends_at, subscription_status)')
     .eq('user_id', user.id)
     .eq('active', true)
     .single()
