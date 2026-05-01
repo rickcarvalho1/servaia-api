@@ -125,9 +125,9 @@ export default function OnboardingChecklist({ businessId, companyData }: { busin
     setLoading(false)
 
     // Mark as seen after first load
-if (typeof window !== 'undefined') {
-  localStorage.setItem('checklist-seen', '1')
-}
+    if (typeof window !== 'undefined') {
+    localStorage.setItem('checklist-seen', '1')
+    }
 
     // Auto-dismiss if all done
     const allDone = newSteps.every(s => s.done)
