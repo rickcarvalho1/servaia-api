@@ -5,16 +5,17 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { AppUser } from '@/types'
-import { LayoutDashboard, Users, Briefcase, ClipboardList, Settings, LogOut, ChevronRight, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, Briefcase, ClipboardList, Settings, LogOut, ChevronRight, Menu, X, CreditCard } from 'lucide-react'
 
 interface Props { user: AppUser }
 
 const NAV = [
-  { href: '/dashboard',           label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/customers', label: 'Customers', icon: Users           },
-  { href: '/dashboard/jobs',      label: 'Jobs',      icon: Briefcase       },
-  { href: '/dashboard/team',      label: 'Team',      icon: ClipboardList, ownerOnly: true },
-  { href: '/dashboard/settings',  label: 'Settings',  icon: Settings        },
+  { href: '/dashboard',                          label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/customers',                label: 'Customers', icon: Users           },
+  { href: '/dashboard/jobs',                     label: 'Jobs',      icon: Briefcase       },
+  { href: '/dashboard/team',                     label: 'Team',      icon: ClipboardList, ownerOnly: true },
+  { href: '/dashboard/settings/stripe-connect',  label: 'Payments',  icon: CreditCard, ownerOnly: true },
+  { href: '/dashboard/settings',                 label: 'Settings',  icon: Settings        },
 ]
 
 export default function Sidebar({ user }: Props) {
