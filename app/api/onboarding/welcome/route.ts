@@ -40,8 +40,7 @@ export async function POST(request: NextRequest) {
     .steps { list-style: none; padding: 0; margin: 0; }
     .steps li { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
     .steps li:last-child { border-bottom: none; }
-    .step-num { width: 28px; height: 28px; background: #C9A84C; color: #0E1117; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
-    .step-content strong { display: block; font-size: 14px; color: #0E1117; margin-bottom: 2px; }
+    .step-num { width: 24px; font-weight: 700; font-size: 15px; color: #C9A84C; flex-shrink: 0; margin-top: 2px; }
     .step-content span { font-size: 13px; color: #6b7280; }
     .step-link { display: inline-block; margin-top: 6px; font-size: 12px; color: #4F8EF7; font-weight: 600; text-decoration: none; }
     .faq { background: #f9fafb; border-radius: 12px; padding: 24px; margin-bottom: 28px; }
