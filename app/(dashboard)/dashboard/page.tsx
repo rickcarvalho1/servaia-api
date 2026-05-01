@@ -5,10 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { DollarSign, Users, Briefcase, TrendingUp, ArrowUpRight, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
 import OnboardingChecklist from '@/components/OnboardingChecklist'
 
-type Period = 'today' | 'week' | 'month' | 'year' | 'all'
+type Period = 'today' | 'week' | 'month' | 'year' | 'all' | 'custom'
 
 const PERIODS: { label: string; value: Period }[] = [
   { label: 'Today', value: 'today' },
@@ -16,6 +16,7 @@ const PERIODS: { label: string; value: Period }[] = [
   { label: 'This Month', value: 'month' },
   { label: 'This Year', value: 'year' },
   { label: 'All Time', value: 'all' },
+  { label: 'Custom', value: 'custom' },
 ]
 
 function getPeriodStart(period: Period): string | null {
@@ -32,7 +33,7 @@ function getPeriodStart(period: Period): string | null {
   return null
 }
 
-function buildChartData(payments: any[], period: Period) {
+function buildChartData(payments: any[], period: Period, customStart?: string, customEnd?: string) {
   if (!payments.length) return []
   const now = new Date()
   const data: { label: string; revenue: number }[] = []
@@ -69,9 +70,80 @@ function buildChartData(payments: any[], period: Period) {
         .reduce((s, p) => s + Number(p.amount || 0), 0)
       data.push({ label: months[m], revenue })
     }
+  } else if (period === 'custom' && customStart && customEnd) {
+    const start = new Date(customStart)
+    const end = new Date(customEnd)
+    const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    if (diffDays <= 31) {
+      // Show by day
+      for (let d = 0; d <= diffDays; d++) {
+        const date = new Date(start)
+        date.setDate(date.getDate() + d)
+        const label = `${date.getMonth() + 1}/${date.getDate()}`
+        const revenue = payments
+          .filter(p => {
+            if (!p.completed_at) return false
+            const pd = new Date(p.completed_at)
+            return pd.toDateString() === date.toDateString()
+          })
+          .reduce((s, p) => s + Number(p.amount || 0), 0)
+        data.push({ label, revenue })
+      }
+    } else {
+      // Show by month
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const seen = new Set<string>()
+      payments.forEach(p => {
+        if (!p.completed_at) return
+        const d = new Date(p.completed_at)
+        const key = `${d.getFullYear()}-${d.getMonth()}`
+        seen.add(key)
+      })
+      Array.from(seen).sort().forEach(key => {
+        const [year, month] = key.split('-').map(Number)
+        const label = `${months[month]} ${year}`
+        const revenue = payments
+          .filter(p => {
+            if (!p.completed_at) return false
+            const d = new Date(p.completed_at)
+            return d.getFullYear() === year && d.getMonth() === month
+          })
+          .reduce((s, p) => s + Number(p.amount || 0), 0)
+        data.push({ label, revenue })
+      })
+    }
   }
   return data
 }
+
+function buildServiceData(jobs: any[], period: Period, periodStart: string | null, customStart?: string, customEnd?: string) {
+  const serviceTotals: Record<string, number> = {}
+
+  jobs.forEach(job => {
+    if (!job.completed_at) return
+    const jobDate = new Date(job.completed_at)
+
+    if (period === 'custom' && customStart && customEnd) {
+      if (jobDate < new Date(customStart) || jobDate > new Date(customEnd)) return
+    } else if (periodStart && jobDate < new Date(periodStart)) {
+      return
+    }
+
+    if (job.job_services) {
+      job.job_services.forEach((s: any) => {
+        const name = s.name || 'Unknown'
+        serviceTotals[name] = (serviceTotals[name] || 0) + Number(s.price_charged || 0)
+      })
+    }
+  })
+
+  return Object.entries(serviceTotals)
+    .map(([name, revenue]) => ({ name, revenue }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 8)
+}
+
+const SERVICE_COLORS = ['#4F8EF7', '#3DBF7F', '#E8B84B', '#E05252', '#9B59B6', '#1ABC9C', '#E67E22', '#34495E']
 
 export default function DashboardPage() {
   const supabase = createClient()
@@ -81,9 +153,12 @@ export default function DashboardPage() {
   const [businessId, setBusinessId] = useState('')
   const [companyData, setCompanyData] = useState<any>(null)
   const [period, setPeriod] = useState<Period>('month')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
 
   const [allPayments, setAllPayments] = useState<any[]>([])
   const [recentJobs, setRecentJobs] = useState<any[]>([])
+  const [allJobs, setAllJobs] = useState<any[]>([])
   const [customers, setCustomers] = useState<any[]>([])
   const [pendingCards, setPendingCards] = useState<any[]>([])
 
@@ -109,6 +184,7 @@ export default function DashboardPage() {
     const [
       { data: pays },
       { data: jobs },
+      { data: allJobsData },
       { data: custs },
       { data: pending },
       { data: coData },
@@ -118,6 +194,9 @@ export default function DashboardPage() {
         .in('payment_status', ['charged', 'succeeded']),
       supabase.from('payments').select('id, amount, payment_status, completed_at, customers(full_name), job_services(name, price_charged)')
         .eq('business_id', bizId).order('completed_at', { ascending: false }).limit(10),
+      supabase.from('payments').select('id, amount, payment_status, completed_at, job_services(name, price_charged)')
+        .eq('business_id', bizId)
+        .in('payment_status', ['charged', 'succeeded']),
       supabase.from('customers').select('id, card_status').eq('business_id', bizId),
       supabase.from('customers').select('id, full_name').eq('business_id', bizId).eq('card_status', 'pending'),
       supabase.from('service_companies').select('stripe_connect_status, onboarding_dismissed').eq('id', bizId).single(),
@@ -125,6 +204,7 @@ export default function DashboardPage() {
 
     setAllPayments(pays || [])
     setRecentJobs(jobs || [])
+    setAllJobs(allJobsData || [])
     setCustomers(custs || [])
     setPendingCards(pending || [])
     setCompanyData(coData)
@@ -132,9 +212,20 @@ export default function DashboardPage() {
   }
 
   const periodStart = getPeriodStart(period)
-  const filteredPayments = periodStart
-    ? allPayments.filter(p => p.completed_at && new Date(p.completed_at) >= new Date(periodStart))
-    : allPayments
+
+  const filteredPayments = (() => {
+    if (period === 'custom' && customStart && customEnd) {
+      return allPayments.filter(p => {
+        if (!p.completed_at) return false
+        const d = new Date(p.completed_at)
+        return d >= new Date(customStart) && d <= new Date(customEnd + 'T23:59:59')
+      })
+    }
+    if (periodStart) {
+      return allPayments.filter(p => p.completed_at && new Date(p.completed_at) >= new Date(periodStart))
+    }
+    return allPayments
+  })()
 
   const periodRevenue = filteredPayments.reduce((s, p) => s + Number(p.amount || 0), 0)
   const periodJobs = filteredPayments.length
@@ -151,9 +242,13 @@ export default function DashboardPage() {
   })
   const bestCustomer = Object.values(customerTotals).sort((a, b) => b.total - a.total)[0]
 
-  const chartData = buildChartData(filteredPayments, period)
+  const chartData = buildChartData(filteredPayments, period, customStart, customEnd)
   const hasChartData = chartData.some(d => d.revenue > 0)
-  const periodLabel = PERIODS.find(p => p.value === period)?.label || 'This Month'
+  const serviceData = buildServiceData(allJobs, period, periodStart, customStart, customEnd)
+
+  const periodLabel = period === 'custom' && customStart && customEnd
+    ? `${new Date(customStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(customEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : PERIODS.find(p => p.value === period)?.label || 'This Month'
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -205,16 +300,44 @@ export default function DashboardPage() {
       )}
 
       {/* Period selector */}
-      <div className="flex gap-1 mb-6 bg-white rounded-xl p-1 shadow-sm overflow-x-auto"
-           style={{ border: '1px solid #DDE1EC' }}>
-        {PERIODS.map(p => (
-          <button key={p.value} onClick={() => setPeriod(p.value)}
-            className={`flex-1 min-w-fit px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-              period === p.value ? 'bg-[#0E1117] text-white' : 'text-[#6B7490] hover:text-[#0E1117] hover:bg-gray-50'
-            }`}>
-            {p.label}
-          </button>
-        ))}
+      <div className="mb-6">
+        <div className="flex gap-1 bg-white rounded-xl p-1 shadow-sm overflow-x-auto"
+             style={{ border: '1px solid #DDE1EC' }}>
+          {PERIODS.map(p => (
+            <button key={p.value} onClick={() => setPeriod(p.value)}
+              className={`flex-1 min-w-fit px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                period === p.value ? 'bg-[#0E1117] text-white' : 'text-[#6B7490] hover:text-[#0E1117] hover:bg-gray-50'
+              }`}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom date range picker */}
+        {period === 'custom' && (
+          <div className="mt-3 flex flex-col sm:flex-row gap-3 bg-white rounded-xl p-4 shadow-sm"
+               style={{ border: '1px solid #DDE1EC' }}>
+            <div className="flex-1">
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-1.5">Start Date</label>
+              <input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="w-full px-3 py-2.5 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
+              />
+            </div>
+            <div className="flex items-end pb-2.5 text-[#6B7490] text-sm font-medium hidden sm:flex">→</div>
+            <div className="flex-1">
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-1.5">End Date</label>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="w-full px-3 py-2.5 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats */}
@@ -226,7 +349,7 @@ export default function DashboardPage() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(61,191,127,0.1)' }}>
               <DollarSign size={18} style={{ color: '#3DBF7F' }} />
             </div>
-            <span className="text-xs font-medium" style={{ color: '#6B7490' }}>{periodLabel}</span>
+            <span className="text-xs font-medium truncate max-w-[80px] text-right" style={{ color: '#6B7490' }}>{periodLabel}</span>
           </div>
           <div className="text-xl lg:text-2xl font-bold font-mono tracking-tight" style={{ color: '#0E1117' }}>
             ${periodRevenue.toFixed(2)}
@@ -241,7 +364,7 @@ export default function DashboardPage() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(79,142,247,0.1)' }}>
               <Briefcase size={18} style={{ color: '#4F8EF7' }} />
             </div>
-            <span className="text-xs font-medium" style={{ color: '#6B7490' }}>{periodLabel}</span>
+            <span className="text-xs font-medium truncate max-w-[80px] text-right" style={{ color: '#6B7490' }}>{periodLabel}</span>
           </div>
           <div className="text-xl lg:text-2xl font-bold font-mono tracking-tight" style={{ color: '#0E1117' }}>
             {periodJobs}
@@ -256,7 +379,7 @@ export default function DashboardPage() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(232,184,75,0.1)' }}>
               <TrendingUp size={18} style={{ color: '#E8B84B' }} />
             </div>
-            <span className="text-xs font-medium" style={{ color: '#6B7490' }}>{periodLabel}</span>
+            <span className="text-xs font-medium truncate max-w-[80px] text-right" style={{ color: '#6B7490' }}>{periodLabel}</span>
           </div>
           <div className="text-xl lg:text-2xl font-bold font-mono tracking-tight" style={{ color: '#0E1117' }}>
             ${avgJobValue.toFixed(2)}
@@ -318,6 +441,31 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Revenue by Service */}
+      {serviceData.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6" style={{ border: '1px solid #DDE1EC' }}>
+          <h2 className="font-semibold text-[#0E1117] mb-6">Revenue by Service — {periodLabel}</h2>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={serviceData} margin={{ top: 0, right: 0, left: -20, bottom: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6B7490' }} axisLine={false} tickLine={false}
+                angle={-35} textAnchor="end" interval={0} />
+              <YAxis tick={{ fontSize: 11, fill: '#6B7490' }} axisLine={false} tickLine={false}
+                tickFormatter={v => v === 0 ? '$0' : `$${v >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`} />
+              <Tooltip
+                formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
+                contentStyle={{ borderRadius: '8px', border: '1px solid #DDE1EC', fontSize: '12px' }}
+              />
+              <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
+                {serviceData.map((_, index) => (
+                  <Cell key={index} fill={SERVICE_COLORS[index % SERVICE_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Recent jobs */}
       <div className="bg-white rounded-xl shadow-sm" style={{ border: '1px solid #DDE1EC' }}>
