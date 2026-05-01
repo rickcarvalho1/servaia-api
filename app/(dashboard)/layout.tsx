@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import DashboardPaywall from '@/components/DashboardPaywall'
 import Sidebar from '@/components/ui/Sidebar'
+import InstallPrompt from '@/components/InstallPrompt'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -11,14 +12,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: member } = await supabase
     .from('team_members')
- .select('*, service_companies(id, name, company_name, logo_url, trade, stripe_connect_status, trial_ends_at, subscription_status)')
+    .select('*, service_companies(id, name, company_name, logo_url, trade, stripe_connect_status, trial_ends_at, subscription_status)')
     .eq('user_id', user.id)
     .eq('active', true)
     .single()
 
   if (!member || !member.service_companies) redirect('/login')
 
-  const company = member.service_companies
+  const company = member.service_companies as any
   const stripeStatus = company.stripe_connect_status || 'pending'
   const stripeConnected = stripeStatus === 'active'
 
@@ -32,13 +33,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const requirePaywall = trialEnded && !isSubscriptionActive
 
   const appUser = {
-    id:           user.id,
-    email:        user.email || '',
-    businessId:   company.id,
-    businessName: company.company_name || company.name || 'Your business',
-    logoUrl:      company.logo_url || undefined,
-    fullName:     member.full_name || user.email || 'User',
-    role:         member.role || 'member',
+    id:                  user.id,
+    email:               user.email || '',
+    businessId:          company.id,
+    businessName:        company.company_name || company.name || 'Your business',
+    logoUrl:             company.logo_url || undefined,
+    fullName:            member.full_name || user.email || 'User',
+    role:                member.role || 'member',
     stripeConnectStatus: stripeStatus,
   }
 
@@ -59,15 +60,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         )}
         {trialEndingSoon && (
-          <div className="border-b border-warn/30 bg-warn/10 text-warn px-6 py-4">
+          <div className="border-b border-yellow-300/30 bg-yellow-50/10 text-yellow-700 px-6 py-4">
             <p className="max-w-4xl mx-auto text-sm font-semibold">
-              Your trial ends in {daysUntilTrialEnd} days. Subscribe now to keep using Servaia.
+              Your trial ends in {daysUntilTrialEnd} day{daysUntilTrialEnd !== 1 ? 's' : ''}. Subscribe now to keep using Servaia.
               <a href="/dashboard/billing" className="font-bold underline ml-2">View Billing</a>
             </p>
           </div>
         )}
         {children}
       </main>
+      <InstallPrompt />
     </div>
   )
 }
