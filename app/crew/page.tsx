@@ -18,6 +18,7 @@ type Job = {
     phone: string | null;
     address: string | null;
     card_status: string | null;
+    payment_method: string | null;
   };
   job_services: {
     name: string;
@@ -25,11 +26,7 @@ type Job = {
   }[];
 };
 
-type Photo = {
-  id: string;
-  url: string;
-};
-
+type Photo = { id: string; url: string; };
 type PageView = "jobs" | "complete" | "success";
 
 function formatDateLocal(date: Date) {
@@ -72,6 +69,7 @@ export default function CrewPage() {
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
   const [completeResult, setCompleteResult] = useState<any>(null);
+  const [paymentNote, setPaymentNote] = useState('');
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -101,18 +99,9 @@ export default function CrewPage() {
     const { data } = await supabase
       .from("payments")
       .select(`
-        id,
-        scheduled_for,
-        notes,
-        job_status,
-        assigned_to,
-        crew_member,
-        customers (
-          id, full_name, name, phone, address, card_status
-        ),
-        job_services (
-          name, price_charged
-        )
+        id, scheduled_for, notes, job_status, assigned_to, crew_member,
+        customers (id, full_name, name, phone, address, card_status, payment_method),
+        job_services (name, price_charged)
       `)
       .eq("business_id", bizId)
       .eq("job_status", "scheduled")
@@ -150,25 +139,15 @@ export default function CrewPage() {
   async function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !selectedJob) return;
-
     setUploadingPhoto(true);
-
     try {
       let lat: number | null = null;
       let lng: number | null = null;
-
       try {
         const position = await new Promise<GeolocationPosition | null>((resolve) => {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => resolve(pos),
-            () => resolve(null),
-            { timeout: 5000 }
-          );
+          navigator.geolocation.getCurrentPosition(pos => resolve(pos), () => resolve(null), { timeout: 5000 });
         });
-        if (position) {
-          lat = position.coords.latitude;
-          lng = position.coords.longitude;
-        }
+        if (position) { lat = position.coords.latitude; lng = position.coords.longitude; }
       } catch {}
 
       const fd = new FormData();
@@ -181,10 +160,7 @@ export default function CrewPage() {
 
       const res = await fetch("/api/photos/upload", { method: "POST", body: fd });
       const data = await res.json();
-
-      if (res.ok && data.url) {
-        setPhotos((prev) => [...prev, { id: data.photoId, url: data.url }]);
-      }
+      if (res.ok && data.url) setPhotos(prev => [...prev, { id: data.photoId, url: data.url }]);
     } catch (err) {
       console.error("Photo upload error:", err);
     } finally {
@@ -197,22 +173,14 @@ export default function CrewPage() {
     if (!selectedJob) return;
     setCompleting(true);
     setCompleteError(null);
-
     try {
       const res = await fetch("/api/jobs/complete-scheduled", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: selectedJob.id, crewMember }),
+        body: JSON.stringify({ jobId: selectedJob.id, crewMember, paymentNote }),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        setCompleteError(data.error || "Failed to complete job");
-        setCompleting(false);
-        return;
-      }
-
+      if (!res.ok) { setCompleteError(data.error || "Failed to complete job"); setCompleting(false); return; }
       setCompleteResult(data);
       setView("success");
     } catch (err: any) {
@@ -222,11 +190,7 @@ export default function CrewPage() {
   }
 
   function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   }
 
   function getCustomerName(job: Job) {
@@ -237,8 +201,11 @@ export default function CrewPage() {
     return job.job_services?.reduce((s, sv) => s + sv.price_charged, 0) || 0;
   }
 
+  const isManualPayment = selectedJob?.customers?.payment_method === 'cash_check' || selectedJob?.customers?.payment_method === 'invoice';
   const cardActive = selectedJob?.customers?.card_status === "active" || selectedJob?.customers?.card_status === "authorized";
+  const canComplete = isManualPayment || cardActive;
 
+  // SUCCESS VIEW
   if (view === "success" && completeResult) {
     return (
       <div className="min-h-screen bg-[#F8F9FC] flex flex-col items-center justify-center p-6">
@@ -249,20 +216,22 @@ export default function CrewPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-[#0E1117] mb-1">Job Complete!</h2>
-          <p className="text-4xl font-bold text-[#3DBF7F] font-mono mb-2">${completeResult.amount}</p>
-          <p className="text-sm text-[#6B7490] mb-2">Charged to card on file</p>
+          {completeResult.manual ? (
+            <>
+              <p className="text-4xl font-bold text-[#E8B84B] font-mono mb-2">${completeResult.amount}</p>
+              <p className="text-sm text-[#6B7490] mb-2">Collect payment manually</p>
+            </>
+          ) : (
+            <>
+              <p className="text-4xl font-bold text-[#3DBF7F] font-mono mb-2">${completeResult.amount}</p>
+              <p className="text-sm text-[#6B7490] mb-2">Charged to card on file</p>
+            </>
+          )}
           {photos.length > 0 && (
             <p className="text-xs text-[#6B7490] mb-6">{photos.length} photo{photos.length !== 1 ? "s" : ""} uploaded</p>
           )}
           <button
-            onClick={() => {
-              setView("jobs");
-              setSelectedJob(null);
-              setPhotos([]);
-              setCompleteResult(null);
-              loadJobs(selectedDate);
-              router.push('/crew');
-            }}
+            onClick={() => { setView("jobs"); setSelectedJob(null); setPhotos([]); setCompleteResult(null); setPaymentNote(''); loadJobs(selectedDate); router.push('/crew'); }}
             className="w-full py-3 bg-[#0E1117] text-white font-semibold rounded-xl"
           >
             Back to jobs
@@ -272,15 +241,14 @@ export default function CrewPage() {
     );
   }
 
+  // COMPLETE VIEW
   if (view === "complete" && selectedJob) {
     const total = getJobTotal(selectedJob);
     return (
       <div className="min-h-screen bg-[#F8F9FC]">
         <div className="bg-white border-b border-[#DDE1EC] px-4 py-4 flex items-center gap-3">
-          <button
-            onClick={() => { setView("jobs"); setPhotos([]); setCompleteError(null); router.push('/crew'); }}
-            className="p-2 rounded-lg hover:bg-gray-50"
-          >
+          <button onClick={() => { setView("jobs"); setPhotos([]); setCompleteError(null); setPaymentNote(''); router.push('/crew'); }}
+            className="p-2 rounded-lg hover:bg-gray-50">
             <svg className="h-5 w-5 text-[#6B7490]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
@@ -292,6 +260,7 @@ export default function CrewPage() {
         </div>
 
         <div className="p-4 space-y-4 max-w-lg mx-auto">
+          {/* Services */}
           <div className="bg-white rounded-2xl border border-[#DDE1EC] p-5">
             <h3 className="text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-3">Services</h3>
             <div className="space-y-2">
@@ -308,51 +277,48 @@ export default function CrewPage() {
             </div>
           </div>
 
+          {/* Photos */}
           <div className="bg-white rounded-2xl border border-[#DDE1EC] p-5">
             <h3 className="text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-3">
               Job Photos ({photos.length})
             </h3>
             {photos.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-3">
-                {photos.map((p) => (
+                {photos.map(p => (
                   <img key={p.id} src={p.url} alt="Job photo" className="w-full aspect-square object-cover rounded-lg" />
                 ))}
               </div>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handlePhotoCapture}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingPhoto}
-              className="w-full py-3 border-2 border-dashed border-[#DDE1EC] rounded-xl text-sm text-[#6B7490] hover:border-[#4F8EF7] hover:text-[#4F8EF7] transition flex items-center justify-center gap-2 disabled:opacity-50"
-            >
+            <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoCapture} />
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploadingPhoto}
+              className="w-full py-3 border-2 border-dashed border-[#DDE1EC] rounded-xl text-sm text-[#6B7490] hover:border-[#4F8EF7] hover:text-[#4F8EF7] transition flex items-center justify-center gap-2 disabled:opacity-50">
               {uploadingPhoto ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Uploading…
-                </>
+                <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Uploading…</>
               ) : (
-                <>
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Take photo
-                </>
+                <><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>Take photo</>
               )}
             </button>
           </div>
 
-          {!cardActive && (
+          {/* Manual payment note */}
+          {isManualPayment && (
+            <div className="bg-white rounded-2xl border border-[#DDE1EC] p-5 space-y-3">
+              <h3 className="text-xs font-bold tracking-widest uppercase text-[#6B7490]">Payment Collection</h3>
+              <p className="text-sm text-[#6B7490]">
+                This customer pays by {selectedJob.customers?.payment_method === 'cash_check' ? 'cash or check' : 'invoice'}. No card will be charged.
+              </p>
+              <input
+                type="text"
+                placeholder="e.g. Check #1234, Cash, Zelle... (optional)"
+                value={paymentNote}
+                onChange={e => setPaymentNote(e.target.value)}
+                className="w-full px-3 py-2.5 border border-[#DDE1EC] rounded-xl text-sm text-[#0E1117] placeholder-[#6B7490]/50 outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
+              />
+            </div>
+          )}
+
+          {/* No card warning — only for card customers with no card */}
+          {!isManualPayment && !cardActive && (
             <div className="rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-700">
               ⚠️ No card on file — cannot charge this customer.
             </div>
@@ -364,32 +330,31 @@ export default function CrewPage() {
             </div>
           )}
 
-          <button
-            onClick={handleCompleteJob}
-            disabled={completing || !cardActive}
-            className="w-full py-4 bg-[#3DBF7F] text-white font-bold text-base rounded-xl hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button onClick={handleCompleteJob} disabled={completing || !canComplete}
+            className={`w-full py-4 text-white font-bold text-base rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed ${
+              isManualPayment ? 'bg-[#E8B84B] hover:bg-yellow-500' : 'bg-[#3DBF7F] hover:bg-green-500'
+            }`}>
             {completing ? (
               <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                 Processing…
               </span>
+            ) : isManualPayment ? (
+              `✓ Mark Complete — $${total.toFixed(2)}`
             ) : (
               `💳 Charge $${total.toFixed(2)}`
             )}
           </button>
 
           <p className="text-xs text-[#6B7490] text-center">
-            Card will be charged immediately upon completion.
+            {isManualPayment ? 'Job will be marked complete. Collect payment manually.' : 'Card will be charged immediately upon completion.'}
           </p>
         </div>
       </div>
     );
   }
 
+  // JOBS LIST VIEW
   return (
     <div className="min-h-screen bg-[#F8F9FC]">
       <div className="bg-white border-b border-[#DDE1EC] px-4 py-4">
@@ -405,10 +370,7 @@ export default function CrewPage() {
 
         {/* Date Navigator */}
         <div className="flex items-center justify-between max-w-lg mx-auto mt-3">
-          <button
-            onClick={() => changeDate(-1)}
-            className="p-2 rounded-lg hover:bg-gray-50 border border-[#DDE1EC]"
-          >
+          <button onClick={() => changeDate(-1)} className="p-2 rounded-lg hover:bg-gray-50 border border-[#DDE1EC]">
             <svg className="h-4 w-4 text-[#6B7490]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
@@ -419,10 +381,7 @@ export default function CrewPage() {
               {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
-          <button
-            onClick={() => changeDate(1)}
-            className="p-2 rounded-lg hover:bg-gray-50 border border-[#DDE1EC]"
-          >
+          <button onClick={() => changeDate(1)} className="p-2 rounded-lg hover:bg-gray-50 border border-[#DDE1EC]">
             <svg className="h-4 w-4 text-[#6B7490]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
@@ -441,30 +400,24 @@ export default function CrewPage() {
         ) : jobs.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-4xl mb-4">✅</div>
-            <p className="font-semibold text-[#0E1117]">No jobs scheduled for {formatDateLabel(selectedDate).toLowerCase()}</p>
-            <p className="text-sm text-[#6B7490] mt-1">Use the arrows above to navigate dates.</p>
+            <p className="font-semibold text-[#0E1117]">No jobs for {formatDateLabel(selectedDate).toLowerCase()}</p>
+            <p className="text-sm text-[#6B7490] mt-1">Use the arrows to navigate dates.</p>
           </div>
         ) : (
-          jobs.map((job) => {
+          jobs.map(job => {
             const customerName = getCustomerName(job);
             const total = getJobTotal(job);
             const hasCard = job.customers?.card_status === "active" || job.customers?.card_status === "authorized";
+            const isManual = job.customers?.payment_method === 'cash_check' || job.customers?.payment_method === 'invoice';
 
             return (
-              <button
-                key={job.id}
-                onClick={() => router.push(`/crew?job=${job.id}`)}
-                className="w-full bg-white rounded-2xl border border-[#DDE1EC] p-5 text-left hover:border-[#4F8EF7] transition shadow-sm"
-              >
+              <button key={job.id} onClick={() => router.push(`/crew?job=${job.id}`)}
+                className="w-full bg-white rounded-2xl border border-[#DDE1EC] p-5 text-left hover:border-[#4F8EF7] transition shadow-sm">
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="font-semibold text-[#0E1117] text-base">{customerName}</p>
-                    {job.customers?.address && (
-                      <p className="text-xs text-[#6B7490] mt-0.5">📍 {job.customers.address}</p>
-                    )}
-                    {job.customers?.phone && (
-                      <p className="text-xs text-[#6B7490]">📞 {job.customers.phone}</p>
-                    )}
+                    {job.customers?.address && <p className="text-xs text-[#6B7490] mt-0.5">📍 {job.customers.address}</p>}
+                    {job.customers?.phone && <p className="text-xs text-[#6B7490]">📞 {job.customers.phone}</p>}
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-lg font-bold font-mono text-[#0E1117]">${total.toFixed(2)}</p>
@@ -474,18 +427,16 @@ export default function CrewPage() {
 
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {job.job_services.map((s, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-[#F8F9FC] border border-[#DDE1EC] text-[#6B7490]">
-                      {s.name}
-                    </span>
+                    <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-[#F8F9FC] border border-[#DDE1EC] text-[#6B7490]">{s.name}</span>
                   ))}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  {hasCard ? (
+                  {isManual ? (
+                    <span className="text-xs text-[#E8B84B] flex items-center gap-1">💵 {job.customers?.payment_method === 'cash_check' ? 'Cash/Check' : 'Invoice'}</span>
+                  ) : hasCard ? (
                     <span className="text-xs text-[#3DBF7F] flex items-center gap-1">
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                       Card on file
                     </span>
                   ) : (
