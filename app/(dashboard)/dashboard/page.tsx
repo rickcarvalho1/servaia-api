@@ -29,8 +29,9 @@ export default async function DashboardPage() {
       .eq('business_id', businessId).order('completed_at', { ascending: false }).limit(10),
     supabase.from('payments').select('id, amount').eq('business_id', businessId)
       .gte('completed_at', new Date().toISOString().slice(0, 10))
-      .eq('payment_status', 'charged'),
+      .in('payment_status', ['charged', 'succeeded']),
     supabase.from('customers').select('id').eq('business_id', businessId).eq('card_status', 'pending'),
+    supabase.from('payments').select('id, amount').eq('business_id', businessId).in('payment_status', ['charged', 'succeeded']),
   ])
 
   const customersList    = Array.isArray(customers) ? customers : []
