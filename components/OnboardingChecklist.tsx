@@ -18,7 +18,10 @@ export default function OnboardingChecklist({ businessId, companyData }: { busin
   const supabase = createClient()
   const [steps, setSteps] = useState<Step[]>([])
   const [loading, setLoading] = useState(true)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+  if (typeof window === 'undefined') return false
+  return localStorage.getItem('checklist-seen') === '1'
+})
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
@@ -120,6 +123,11 @@ export default function OnboardingChecklist({ businessId, companyData }: { busin
 
     setSteps(newSteps)
     setLoading(false)
+
+    // Mark as seen after first load
+if (typeof window !== 'undefined') {
+  localStorage.setItem('checklist-seen', '1')
+}
 
     // Auto-dismiss if all done
     const allDone = newSteps.every(s => s.done)
