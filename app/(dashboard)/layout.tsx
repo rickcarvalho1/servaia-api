@@ -43,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   if (requirePaywall) {
-    return <DashboardPaywall enabled={requirePaywall} />
+    return <DashboardPaywall enabled={requirePaywall}>{children}</DashboardPaywall>
   }
 
   return (
