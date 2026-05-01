@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";import { useRouter, useSearchParams } from 'next/navigation';import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from "@/lib/supabase/client";
 
 type Job = {
   id: string;
@@ -30,11 +32,36 @@ type Photo = {
 
 type PageView = "jobs" | "complete" | "success";
 
+function formatDateLocal(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function formatDateLabel(date: Date) {
+  const today = formatDateLocal(new Date());
+  const yesterday = formatDateLocal(addDays(new Date(), -1));
+  const tomorrow = formatDateLocal(addDays(new Date(), 1));
+  const key = formatDateLocal(date);
+  if (key === today) return 'Today';
+  if (key === yesterday) return 'Yesterday';
+  if (key === tomorrow) return 'Tomorrow';
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 export default function CrewPage() {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [crewMember, setCrewMember] = useState("");
@@ -50,7 +77,8 @@ export default function CrewPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadJobs = useCallback(async () => {
+  const loadJobs = useCallback(async (date: Date) => {
+    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -66,12 +94,9 @@ export default function CrewPage() {
     setBusinessId(bizId);
     setCrewMember(member.full_name || "");
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const startStr = `${year}-${month}-${day}T00:00:00`;
-    const endStr = `${year}-${month}-${day}T23:59:59`;
+    const dateStr = formatDateLocal(date);
+    const startStr = `${dateStr}T00:00:00`;
+    const endStr = `${dateStr}T23:59:59`;
 
     const { data } = await supabase
       .from("payments")
@@ -100,8 +125,8 @@ export default function CrewPage() {
   }, [supabase]);
 
   useEffect(() => {
-    loadJobs();
-  }, [loadJobs]);
+    loadJobs(selectedDate);
+  }, [selectedDate, loadJobs]);
 
   useEffect(() => {
     const jobId = searchParams.get('job');
@@ -115,6 +140,13 @@ export default function CrewPage() {
     }
   }, [searchParams, jobs]);
 
+  function changeDate(days: number) {
+    setSelectedDate(prev => addDays(prev, days));
+    setView("jobs");
+    setSelectedJob(null);
+    router.push('/crew');
+  }
+
   async function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !selectedJob) return;
@@ -122,22 +154,22 @@ export default function CrewPage() {
     setUploadingPhoto(true);
 
     try {
-     let lat: number | null = null;
-let lng: number | null = null;
+      let lat: number | null = null;
+      let lng: number | null = null;
 
-try {
-  const position = await new Promise<GeolocationPosition | null>((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos),
-      () => resolve(null),
-      { timeout: 5000 }
-    );
-  });
-  if (position) {
-    lat = position.coords.latitude;
-    lng = position.coords.longitude;
-  }
-} catch {}
+      try {
+        const position = await new Promise<GeolocationPosition | null>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            () => resolve(null),
+            { timeout: 5000 }
+          );
+        });
+        if (position) {
+          lat = position.coords.latitude;
+          lng = position.coords.longitude;
+        }
+      } catch {}
 
       const fd = new FormData();
       fd.append("file", file);
@@ -205,7 +237,7 @@ try {
     return job.job_services?.reduce((s, sv) => s + sv.price_charged, 0) || 0;
   }
 
-  const cardActive = selectedJob?.customers?.card_status === "active";
+  const cardActive = selectedJob?.customers?.card_status === "active" || selectedJob?.customers?.card_status === "authorized";
 
   if (view === "success" && completeResult) {
     return (
@@ -223,7 +255,14 @@ try {
             <p className="text-xs text-[#6B7490] mb-6">{photos.length} photo{photos.length !== 1 ? "s" : ""} uploaded</p>
           )}
           <button
-            onClick={() => { setView("jobs"); setSelectedJob(null); setPhotos([]); setCompleteResult(null); loadJobs(); router.push('/crew'); }}
+            onClick={() => {
+              setView("jobs");
+              setSelectedJob(null);
+              setPhotos([]);
+              setCompleteResult(null);
+              loadJobs(selectedDate);
+              router.push('/crew');
+            }}
             className="w-full py-3 bg-[#0E1117] text-white font-semibold rounded-xl"
           >
             Back to jobs
@@ -356,15 +395,38 @@ try {
       <div className="bg-white border-b border-[#DDE1EC] px-4 py-4">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
-            <h1 className="text-lg font-bold text-[#0E1117]">Today's Jobs</h1>
-            <p className="text-xs text-[#6B7490]">
-              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-            </p>
+            <h1 className="text-lg font-bold text-[#0E1117]">Crew Jobs</h1>
+            <p className="text-xs text-[#6B7490]">{crewMember}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs font-medium text-[#0E1117]">{crewMember}</p>
             <p className="text-xs text-[#6B7490]">{jobs.length} job{jobs.length !== 1 ? "s" : ""}</p>
           </div>
+        </div>
+
+        {/* Date Navigator */}
+        <div className="flex items-center justify-between max-w-lg mx-auto mt-3">
+          <button
+            onClick={() => changeDate(-1)}
+            className="p-2 rounded-lg hover:bg-gray-50 border border-[#DDE1EC]"
+          >
+            <svg className="h-4 w-4 text-[#6B7490]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="text-center">
+            <p className="font-semibold text-[#0E1117] text-sm">{formatDateLabel(selectedDate)}</p>
+            <p className="text-xs text-[#6B7490]">
+              {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
+          </div>
+          <button
+            onClick={() => changeDate(1)}
+            className="p-2 rounded-lg hover:bg-gray-50 border border-[#DDE1EC]"
+          >
+            <svg className="h-4 w-4 text-[#6B7490]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -379,14 +441,14 @@ try {
         ) : jobs.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-4xl mb-4">✅</div>
-            <p className="font-semibold text-[#0E1117]">No jobs scheduled today</p>
-            <p className="text-sm text-[#6B7490] mt-1">Check back later or contact your manager.</p>
+            <p className="font-semibold text-[#0E1117]">No jobs scheduled for {formatDateLabel(selectedDate).toLowerCase()}</p>
+            <p className="text-sm text-[#6B7490] mt-1">Use the arrows above to navigate dates.</p>
           </div>
         ) : (
           jobs.map((job) => {
             const customerName = getCustomerName(job);
             const total = getJobTotal(job);
-            const hasCard = job.customers?.card_status === "active";
+            const hasCard = job.customers?.card_status === "active" || job.customers?.card_status === "authorized";
 
             return (
               <button
