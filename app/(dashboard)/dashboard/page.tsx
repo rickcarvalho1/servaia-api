@@ -18,60 +18,39 @@ export default async function DashboardPage() {
   const businessId = (member.service_companies as any).id
   const firstName = member.full_name?.split(' ')[0] || 'there'
 
-  try {
-    const [
-      { data: customers, error: customersError },
-      { data: jobs, error: jobsError },
-      { data: todayJobs, error: todayJobsError },
-      { data: pendingCards, error: pendingCardsError },
-    ] = await Promise.all([
-      supabase.from('customers').select('id, card_status').eq('business_id', businessId),
-      supabase.from('payments').select('id, amount, payment_status, completed_at, customers(full_name), job_services(name, price_charged)')
-        .eq('business_id', businessId).order('completed_at', { ascending: false }).limit(10),
-      supabase.from('payments').select('id, amount').eq('business_id', businessId)
-        .gte('completed_at', new Date().toISOString().slice(0, 10))
-        .eq('payment_status', 'charged'),
-      supabase.from('customers').select('id').eq('business_id', businessId).eq('card_status', 'pending'),
-    ])
+  const [
+    { data: customers },
+    { data: jobs },
+    { data: todayJobs },
+    { data: pendingCards },
+  ] = await Promise.all([
+    supabase.from('customers').select('id, card_status').eq('business_id', businessId),
+    supabase.from('payments').select('id, amount, payment_status, completed_at, customers(full_name), job_services(name, price_charged)')
+      .eq('business_id', businessId).order('completed_at', { ascending: false }).limit(10),
+    supabase.from('payments').select('id, amount').eq('business_id', businessId)
+      .gte('completed_at', new Date().toISOString().slice(0, 10))
+      .eq('payment_status', 'charged'),
+    supabase.from('customers').select('id').eq('business_id', businessId).eq('card_status', 'pending'),
+  ])
 
-    // Check for query errors
-    if (customersError) console.error('Customers query error:', customersError)
-    if (jobsError) console.error('Jobs query error:', jobsError)
-    if (todayJobsError) console.error('Today jobs query error:', todayJobsError)
-    if (pendingCardsError) console.error('Pending cards query error:', pendingCardsError)
+  const customersList    = Array.isArray(customers) ? customers : []
+  const jobsList         = Array.isArray(jobs) ? jobs : []
+  const todayJobsList    = Array.isArray(todayJobs) ? todayJobs : []
+  const pendingCardsList = Array.isArray(pendingCards) ? pendingCards : []
 
-    const customersList  = Array.isArray(customers) ? customers : []
-    const jobsList       = Array.isArray(jobs) ? jobs : []
-    const todayJobsList  = Array.isArray(todayJobs) ? todayJobs : []
-    const pendingCardsList = Array.isArray(pendingCards) ? pendingCards : []
+  const totalCustomers   = customersList.length
+  const authorizedCards  = customersList.filter(c => c.card_status === 'authorized').length
+  const pendingCardCount = pendingCardsList.length
+  const todayRevenue     = todayJobsList.reduce((s, j) => s + Number(j.amount || 0), 0)
+  const totalRevenue     = jobsList.filter(j => j.payment_status === 'charged').reduce((s, j) => s + Number(j.amount || 0), 0)
+  const totalJobs        = jobsList.length
 
-    const totalCustomers   = customersList.length
-    const authorizedCards  = customersList.filter(c => c.card_status === 'authorized').length
-    const pendingCardCount = pendingCardsList.length
-    const todayRevenue     = todayJobsList.reduce((s, j) => s + Number(j.amount || 0), 0)
-    const totalRevenue     = jobsList.filter(j => j.payment_status === 'charged').reduce((s, j) => s + Number(j.amount || 0), 0)
-    const totalJobs        = jobsList.length
-
-    const stats = [
-      { label: "Today's Revenue", value: `$${todayRevenue.toFixed(2)}`, icon: DollarSign, color: '#3DBF7F', bg: 'rgba(61,191,127,0.1)', change: 'Today' },
-      { label: 'Total Revenue',   value: `$${totalRevenue.toFixed(2)}`, icon: TrendingUp,  color: '#4F8EF7', bg: 'rgba(79,142,247,0.1)', change: 'All time' },
-      { label: 'Active Customers',value: `${authorizedCards} / ${totalCustomers}`, icon: Users, color: '#E8B84B', bg: 'rgba(232,184,75,0.1)', change: 'Cards on file' },
-      { label: 'Jobs Completed',  value: String(totalJobs), icon: Briefcase, color: '#4F8EF7', bg: 'rgba(79,142,247,0.1)', change: 'Total' },
-    ]
-
-  } catch (error) {
-    console.error('Dashboard data fetch error:', error)
-    // Return a basic dashboard with error state
-    return (
-      <div className="p-4 lg:p-8 max-w-6xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-red-800 mb-2">Dashboard Error</h2>
-          <p className="text-red-700">Unable to load dashboard data. Please try refreshing the page.</p>
-          <p className="text-sm text-red-600 mt-2">Error: {error instanceof Error ? error.message : 'Unknown error'}</p>
-        </div>
-      </div>
-    )
-  }
+  const stats = [
+    { label: "Today's Revenue", value: `$${todayRevenue.toFixed(2)}`,                    icon: DollarSign, color: '#3DBF7F', bg: 'rgba(61,191,127,0.1)',  change: 'Today' },
+    { label: 'Total Revenue',   value: `$${totalRevenue.toFixed(2)}`,                    icon: TrendingUp,  color: '#4F8EF7', bg: 'rgba(79,142,247,0.1)',  change: 'All time' },
+    { label: 'Active Customers',value: `${authorizedCards} / ${totalCustomers}`,         icon: Users,       color: '#E8B84B', bg: 'rgba(232,184,75,0.1)',  change: 'Cards on file' },
+    { label: 'Jobs Completed',  value: String(totalJobs),                                icon: Briefcase,   color: '#4F8EF7', bg: 'rgba(79,142,247,0.1)',  change: 'Total' },
+  ]
 
   return (
     <div className="p-4 lg:p-8 max-w-6xl mx-auto">
@@ -141,7 +120,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <div>
-          {!jobs || jobs.length === 0 ? (
+          {!jobsList || jobsList.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <Briefcase size={32} className="mx-auto mb-3" style={{ color: '#DDE1EC' }} />
               <p className="text-sm" style={{ color: '#6B7490' }}>
@@ -155,7 +134,7 @@ export default async function DashboardPage() {
             <>
               {/* Desktop List */}
               <div className="hidden lg:block">
-                {jobs.map((job: any) => (
+                {jobsList.map((job: any) => (
                   <div key={job.id} className="flex items-center gap-4 px-6 py-4"
                        style={{ borderBottom: '1px solid #DDE1EC' }}>
                     {job.payment_status === 'charged' && <CheckCircle2 size={14} style={{ color: '#3DBF7F', flexShrink: 0 }} />}
@@ -183,7 +162,7 @@ export default async function DashboardPage() {
 
               {/* Mobile Cards */}
               <div className="lg:hidden p-4 space-y-3">
-                {jobs.map((job: any) => (
+                {jobsList.map((job: any) => (
                   <div key={job.id} className="bg-white border border-[#DDE1EC] rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="text-sm font-semibold truncate" style={{ color: '#0E1117' }}>
