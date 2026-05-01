@@ -6,13 +6,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia',
 })
 
-async function sendSMSReceipt({ phone, customerName, businessName, serviceNames, totalDollars, surchargeAmount }: any) {
+async function sendSMSReceipt({ phone, customerName, businessName, serviceNames, totalDollars, surchargeAmount, isManual }: any) {
   const twilioSid = process.env.TWILIO_ACCOUNT_SID
   const twilioAuth = process.env.TWILIO_AUTH_TOKEN
   const twilioPhone = process.env.TWILIO_PHONE_NUMBER
   if (!twilioSid || !twilioAuth || !twilioPhone) return false
 
-  const body = `Hi ${customerName}, your service from ${businessName} is complete. Services: ${serviceNames}.${surchargeAmount ? ` Card surcharge: $${surchargeAmount.toFixed(2)}.` : ''} Total charged: $${totalDollars}. Thank you!`
+  const body = isManual
+    ? `Hi ${customerName}, your service from ${businessName} is complete. Services: ${serviceNames}. Total: $${totalDollars}. Thank you!`
+    : `Hi ${customerName}, your service from ${businessName} is complete. Services: ${serviceNames}.${surchargeAmount ? ` Card surcharge: $${surchargeAmount.toFixed(2)}.` : ''} Total charged: $${totalDollars}. Thank you!`
+
   const formData = new URLSearchParams()
   formData.append('To', phone)
   formData.append('From', twilioPhone)
@@ -29,7 +32,7 @@ async function sendSMSReceipt({ phone, customerName, businessName, serviceNames,
   return res.ok
 }
 
-async function sendEmailReceipt({ email, customerName, businessName, services, totalDollars, surchargeAmount }: any) {
+async function sendEmailReceipt({ email, customerName, businessName, services, totalDollars, surchargeAmount, isManual, paymentNote }: any) {
   const resendKey = process.env.RESEND_API_KEY
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'rick@servaiapay.com'
   if (!resendKey) return false
@@ -40,11 +43,23 @@ async function sendEmailReceipt({ email, customerName, businessName, services, t
       <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;color:#374151;text-align:right;">$${parseFloat(s.price_charged).toFixed(2)}</td>
     </tr>`).join('')
 
-  const surchargeRow = surchargeAmount && surchargeAmount > 0 ? `
+  const surchargeRow = !isManual && surchargeAmount && surchargeAmount > 0 ? `
     <tr>
       <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;color:#374151;font-weight:700;">Card surcharge</td>
       <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;color:#374151;text-align:right;">$${surchargeAmount.toFixed(2)}</td>
     </tr>` : ''
+
+  const paymentNoteRow = isManual && paymentNote ? `
+    <tr>
+      <td colspan="2" style="padding:8px 0;border-bottom:1px solid #f0f0f0;color:#6b7280;font-size:13px;">
+        Payment note: ${paymentNote}
+      </td>
+    </tr>` : ''
+
+  const chargeLabel = isManual ? 'Total due' : 'Total charged'
+  const chargeSubtext = isManual
+    ? `<p style="margin:0 0 24px;color:#6b7280;font-size:14px;">Your service has been completed. Please arrange payment at your convenience.</p>`
+    : `<p style="margin:0 0 24px;color:#6b7280;font-size:14px;">Your service has been completed and your card has been charged.</p>`
 
   const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f9fafb;font-family:ui-sans-serif,system-ui,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
@@ -56,12 +71,13 @@ async function sendEmailReceipt({ email, customerName, businessName, services, t
         </td></tr>
         <tr><td style="padding:32px;">
           <p style="margin:0 0 8px;color:#374151;">Hi ${customerName},</p>
-          <p style="margin:0 0 24px;color:#6b7280;font-size:14px;">Your service has been completed and your card has been charged.</p>
+          ${chargeSubtext}
           <table width="100%" cellpadding="0" cellspacing="0">
             ${lineItemsHTML}
             ${surchargeRow}
+            ${paymentNoteRow}
             <tr>
-              <td style="padding:16px 0 0;font-weight:700;color:#0E1117;">Total charged</td>
+              <td style="padding:16px 0 0;font-weight:700;color:#0E1117;">${chargeLabel}</td>
               <td style="padding:16px 0 0;font-weight:700;color:#0E1117;text-align:right;">$${totalDollars}</td>
             </tr>
           </table>
@@ -89,7 +105,7 @@ async function sendEmailReceipt({ email, customerName, businessName, services, t
 
 export async function POST(request: Request) {
   try {
-    const { jobId, crewMember } = await request.json()
+    const { jobId, crewMember, paymentNote } = await request.json()
 
     if (!jobId) {
       return NextResponse.json({ error: 'jobId is required' }, { status: 400 })
@@ -104,6 +120,7 @@ export async function POST(request: Request) {
         customers (
           id, full_name, name, email, phone,
           stripe_customer_id, stripe_payment_method,
+          payment_method,
           service_companies (id, name, surcharge_enabled, surcharge_percentage, stripe_account_id)
         ),
         job_services (name, price_charged)
@@ -124,15 +141,6 @@ export async function POST(request: Request) {
       ? customer.service_companies[0]
       : customer.service_companies
 
-    const stripeAccountId = company?.stripe_account_id
-    if (!stripeAccountId) {
-      return NextResponse.json({ error: 'Business Stripe account not connected' }, { status: 400 })
-    }
-
-    if (!customer.stripe_customer_id || !customer.stripe_payment_method) {
-      return NextResponse.json({ error: 'Customer has no card on file' }, { status: 402 })
-    }
-
     const services = job.job_services as any[]
     const totalCents = services.reduce(
       (sum: number, s: any) => sum + Math.round(parseFloat(s.price_charged) * 100), 0
@@ -142,6 +150,63 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Total must be greater than $0' }, { status: 400 })
     }
 
+    const customerName = customer.full_name || customer.name || 'Customer'
+    const businessName = company?.name || 'Servaia'
+    const serviceNames = services.map((s: any) => s.name).join(', ')
+    const paymentMethod = customer.payment_method || 'card'
+    const isManual = paymentMethod === 'cash_check' || paymentMethod === 'invoice'
+
+    // --- MANUAL PAYMENT FLOW (cash/check/invoice) ---
+    if (isManual) {
+      const totalDollars = (totalCents / 100).toFixed(2)
+
+      await supabase
+        .from('payments')
+        .update({
+          job_status:     'completed',
+          payment_status: 'manual_collection',
+          amount:         parseFloat(totalDollars),
+          crew_member:    crewMember || job.crew_member || null,
+          completed_at:   new Date().toISOString(),
+          notes:          paymentNote
+            ? `${job.notes ? job.notes + ' | ' : ''}Payment: ${paymentNote}`
+            : job.notes || null,
+        })
+        .eq('id', jobId)
+
+      let smsSent = false
+      let emailSent = false
+
+      if (customer.phone) {
+        smsSent = await sendSMSReceipt({ phone: customer.phone, customerName, businessName, serviceNames, totalDollars, isManual: true })
+      }
+      if (customer.email) {
+        emailSent = await sendEmailReceipt({ email: customer.email, customerName, businessName, services, totalDollars, isManual: true, paymentNote })
+      }
+
+      await supabase.from('payments').update({ sms_sent: smsSent, email_sent: emailSent }).eq('id', jobId)
+
+      return NextResponse.json({
+        success: true,
+        jobId,
+        amount: totalDollars,
+        manual: true,
+        paymentMethod,
+        smsSent,
+        emailSent,
+      })
+    }
+
+    // --- CARD PAYMENT FLOW ---
+    const stripeAccountId = company?.stripe_account_id
+    if (!stripeAccountId) {
+      return NextResponse.json({ error: 'Business Stripe account not connected' }, { status: 400 })
+    }
+
+    if (!customer.stripe_customer_id || !customer.stripe_payment_method) {
+      return NextResponse.json({ error: 'Customer has no card on file' }, { status: 402 })
+    }
+
     const surchargeEnabled = !!company?.surcharge_enabled
     const surchargePercentage = parseFloat(company?.surcharge_percentage || 0)
     const surchargeAmountCents = surchargeEnabled
@@ -149,10 +214,6 @@ export async function POST(request: Request) {
       : 0
     const totalWithSurchargeCents = totalCents + surchargeAmountCents
     const platformFeeCents = Math.round(totalWithSurchargeCents * 0.006)
-
-    const businessName = company?.name || 'Servaia'
-    const customerName = customer.full_name || customer.name || 'Customer'
-    const serviceNames = services.map((s: any) => s.name).join(', ')
     const totalDollars = (totalWithSurchargeCents / 100).toFixed(2)
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -163,9 +224,7 @@ export async function POST(request: Request) {
       confirm:        true,
       off_session:    true,
       description:    `${businessName}: ${serviceNames}`,
-      transfer_data: {
-        destination: stripeAccountId,
-      },
+      transfer_data: { destination: stripeAccountId },
       application_fee_amount: platformFeeCents,
       metadata: {
         jobId,
@@ -197,22 +256,20 @@ export async function POST(request: Request) {
     let emailSent = false
 
     if (customer.phone) {
-      smsSent = await sendSMSReceipt({ phone: customer.phone, customerName, businessName, serviceNames, totalDollars, surchargeAmount: surchargeAmountCents / 100 })
+      smsSent = await sendSMSReceipt({ phone: customer.phone, customerName, businessName, serviceNames, totalDollars, surchargeAmount: surchargeAmountCents / 100, isManual: false })
     }
     if (customer.email) {
-      emailSent = await sendEmailReceipt({ email: customer.email, customerName, businessName, services, totalDollars, surchargeAmount: surchargeAmountCents / 100 })
+      emailSent = await sendEmailReceipt({ email: customer.email, customerName, businessName, services, totalDollars, surchargeAmount: surchargeAmountCents / 100, isManual: false })
     }
 
-    await supabase
-      .from('payments')
-      .update({ sms_sent: smsSent, email_sent: emailSent })
-      .eq('id', jobId)
+    await supabase.from('payments').update({ sms_sent: smsSent, email_sent: emailSent }).eq('id', jobId)
 
     return NextResponse.json({
       success: true,
       jobId,
       chargeId: paymentIntent.id,
       amount: totalDollars,
+      manual: false,
       smsSent,
       emailSent,
     })
