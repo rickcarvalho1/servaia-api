@@ -135,7 +135,7 @@ export default function CustomerDetailPage() {
         .order("sort_order"),
       supabase
         .from("customer_services")
-        .select("id, service_id, custom_price")
+        .select("id, service_id, price")
         .eq("customer_id", customerId),
     ]);
 
