@@ -58,7 +58,6 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<Period>('month')
   const [businessId, setBusinessId] = useState('')
-
   const [payments, setPayments] = useState<any[]>([])
   const [customers, setCustomers] = useState<any[]>([])
   const [teamMembers, setTeamMembers] = useState<any[]>([])
@@ -123,7 +122,6 @@ export default function ReportsPage() {
   const manualJobs = manualFiltered.length
   const avgJobValue = totalJobs > 0 ? grossRevenue / totalJobs : 0
 
-  // Service breakdown
   const serviceTotals: Record<string, { revenue: number; count: number }> = {}
   completedFiltered.forEach(p => {
     ;(p.job_services || []).forEach((s: any) => {
@@ -136,7 +134,6 @@ export default function ReportsPage() {
     .map(([name, d]) => ({ name, ...d }))
     .sort((a, b) => b.revenue - a.revenue)
 
-  // Top customers
   const customerRevenue: Record<string, { name: string; revenue: number; jobs: number; lastJob: string | null }> = {}
   completedFiltered.forEach(p => {
     const name = (p.customers as any)?.full_name || 'Unknown'
@@ -149,7 +146,6 @@ export default function ReportsPage() {
   })
   const topCustomers = Object.values(customerRevenue).sort((a, b) => b.revenue - a.revenue).slice(0, 10)
 
-  // Dormant customers (60+ days)
   const sixtyDaysAgo = new Date()
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
   const allCustomerLastJob: Record<string, string> = {}
@@ -165,7 +161,6 @@ export default function ReportsPage() {
     return !last || new Date(last) < sixtyDaysAgo
   }).slice(0, 8)
 
-  // Team productivity
   const teamStats: Record<string, { name: string; jobs: number; revenue: number }> = {}
   teamMembers.forEach(m => { teamStats[m.full_name] = { name: m.full_name, jobs: 0, revenue: 0 } })
   completedFiltered.forEach(p => {
@@ -177,7 +172,6 @@ export default function ReportsPage() {
   })
   const teamPerformance = Object.values(teamStats).sort((a, b) => b.revenue - a.revenue)
 
-  // 6-month trend
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   const now = new Date()
   const monthlyTrend = Array.from({ length: 6 }, (_, i) => {
@@ -221,10 +215,11 @@ export default function ReportsPage() {
     </div>
   )
 
+  const periodLabel = PERIODS.find(p => p.value === period)?.label || 'This Month'
+
   return (
     <div className="p-4 lg:p-8 max-w-6xl mx-auto">
 
-      {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-4">
         <div>
           <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
@@ -242,7 +237,6 @@ export default function ReportsPage() {
         </button>
       </div>
 
-      {/* Period selector */}
       <div className="mb-8">
         <div className="flex gap-1 bg-white rounded-xl p-1 shadow-sm overflow-x-auto" style={{ border: '1px solid #DDE1EC' }}>
           {PERIODS.map(p => (
@@ -256,33 +250,31 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Financial Summary */}
-      <SectionHeader title="Financial Summary" sub={`${PERIODS.find(p => p.value === period)?.label} · ${totalJobs} jobs completed`} />
+      <SectionHeader title="Financial Summary" sub={periodLabel + ' — ' + totalJobs + ' jobs completed'} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Gross Revenue" value={`$${grossRevenue.toFixed(2)}`} sub="Before surcharges" icon={DollarSign} color="#3DBF7F" />
-        <StatCard label="Net Revenue" value={`$${netRevenue.toFixed(2)}`} sub="After surcharges" icon={TrendingUp} color="#4F8EF7" />
-        <StatCard label="Surcharge Collected" value={`$${totalSurcharge.toFixed(2)}`} sub="Passed to customer" icon={DollarSign} color="#E8B84B" />
-        <StatCard label="Avg Job Value" value={`$${avgJobValue.toFixed(2)}`} sub={`${cardJobs} card · ${manualJobs} manual`} icon={Briefcase} color="#9B59B6" />
+        <StatCard label="Gross Revenue" value={'$' + grossRevenue.toFixed(2)} sub="Before surcharges" icon={DollarSign} color="#3DBF7F" />
+        <StatCard label="Net Revenue" value={'$' + netRevenue.toFixed(2)} sub="After surcharges" icon={TrendingUp} color="#4F8EF7" />
+        <StatCard label="Surcharge Collected" value={'$' + totalSurcharge.toFixed(2)} sub="Passed to customer" icon={DollarSign} color="#E8B84B" />
+        <StatCard label="Avg Job Value" value={'$' + avgJobValue.toFixed(2)} sub={cardJobs + ' card — ' + manualJobs + ' manual'} icon={Briefcase} color="#9B59B6" />
       </div>
 
-      {/* Payment method split + 6-month trend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 shadow-sm" style={{ border: '1px solid #DDE1EC' }}>
           <SectionHeader title="Payment Method Split" />
           <div className="space-y-4">
             {[
-              { label: 'Card (Stripe)', count: cardJobs, revenue: cardFiltered.reduce((s,p) => s + Number(p.amount||0), 0), color: '#4F8EF7' },
-              { label: 'Cash / Check / Invoice', count: manualJobs, revenue: manualFiltered.reduce((s,p) => s + Number(p.amount||0), 0), color: '#E8B84B' },
+              { label: 'Card (Stripe)', count: cardJobs, revenue: cardFiltered.reduce((s, p) => s + Number(p.amount || 0), 0), color: '#4F8EF7' },
+              { label: 'Cash / Check / Invoice', count: manualJobs, revenue: manualFiltered.reduce((s, p) => s + Number(p.amount || 0), 0), color: '#E8B84B' },
             ].map(item => (
               <div key={item.label}>
                 <div className="flex justify-between text-sm mb-1.5">
-                  <span style={{ color: '#0E1117' }} className="font-medium">{item.label}</span>
-                  <span className="font-mono font-bold" style={{ color: '#0E1117' }}>${item.revenue.toFixed(2)}</span>
+                  <span className="font-medium" style={{ color: '#0E1117' }}>{item.label}</span>
+                  <span className="font-mono font-bold" style={{ color: '#0E1117' }}>{'$' + item.revenue.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-2 rounded-full" style={{ background: '#F0F2F8' }}>
                     <div className="h-full rounded-full transition-all" style={{
-                      width: `${totalJobs > 0 ? (item.count / totalJobs) * 100 : 0}%`,
+                      width: (totalJobs > 0 ? (item.count / totalJobs) * 100 : 0) + '%',
                       background: item.color
                     }} />
                   </div>
@@ -302,10 +294,10 @@ export default function ReportsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#6B7490' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: '#6B7490' }} axisLine={false} tickLine={false}
-                tickFormatter={v => `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} />
-              <Tooltip formatter={(v: any) => [`$${Number(v).toFixed(2)}`, 'Revenue']}
+                tickFormatter={v => '$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)} />
+              <Tooltip formatter={(v: any) => ['$' + Number(v).toFixed(2), 'Revenue']}
                 contentStyle={{ borderRadius: '8px', border: '1px solid #DDE1EC', fontSize: '12px' }} />
-              <Bar dataKey="revenue" radius={[4,4,0,0]}>
+              <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
                 {monthlyTrend.map((_, i) => (
                   <Cell key={i} fill={i === monthlyTrend.length - 1 ? '#4F8EF7' : '#DDE1EC'} />
                 ))}
@@ -315,7 +307,6 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Service Breakdown */}
       {serviceBreakdown.length > 0 && (
         <div className="mb-8">
           <SectionHeader title="Revenue by Service" sub="Which services are driving your business" />
@@ -333,11 +324,11 @@ export default function ReportsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold truncate" style={{ color: '#0E1117' }}>{s.name}</div>
                   <div className="text-xs mt-0.5" style={{ color: '#6B7490' }}>
-                    {s.count} job{s.count !== 1 ? 's' : ''} · avg ${s.count > 0 ? (s.revenue / s.count).toFixed(0) : 0}
+                    {s.count} {s.count !== 1 ? 'jobs' : 'job'} — avg ${s.count > 0 ? (s.revenue / s.count).toFixed(0) : 0}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold font-mono" style={{ color: '#0E1117' }}>${s.revenue.toFixed(2)}</div>
+                  <div className="text-sm font-bold font-mono" style={{ color: '#0E1117' }}>{'$' + s.revenue.toFixed(2)}</div>
                   <div className="text-xs" style={{ color: '#6B7490' }}>
                     {grossRevenue > 0 ? ((s.revenue / grossRevenue) * 100).toFixed(1) : 0}% of total
                   </div>
@@ -348,7 +339,6 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Team Performance */}
       {teamPerformance.length > 0 && (
         <div className="mb-8">
           <SectionHeader title="Team Performance" sub="Jobs completed and revenue generated per crew member" />
@@ -374,7 +364,7 @@ export default function ReportsPage() {
                   {i === 0 && <div className="text-xs" style={{ color: '#E8B84B' }}>Top performer</div>}
                 </div>
                 <div className="text-sm font-mono text-right" style={{ color: '#6B7490' }}>{m.jobs} jobs</div>
-                <div className="text-sm font-bold font-mono text-right w-24" style={{ color: '#0E1117' }}>${m.revenue.toFixed(2)}</div>
+                <div className="text-sm font-bold font-mono text-right w-24" style={{ color: '#0E1117' }}>{'$' + m.revenue.toFixed(2)}</div>
               </div>
             ))}
             {teamPerformance.every(m => m.jobs === 0) && (
@@ -386,9 +376,8 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Top Customers */}
       <div className="mb-8">
-        <SectionHeader title="Top Customers" sub={`By revenue · ${PERIODS.find(p => p.value === period)?.label}`} />
+        <SectionHeader title="Top Customers" sub={'By revenue — ' + periodLabel} />
         <div className="bg-white rounded-xl shadow-sm overflow-hidden" style={{ border: '1px solid #DDE1EC' }}>
           <div className="hidden lg:grid grid-cols-4 px-6 py-3 text-xs font-bold uppercase tracking-widest"
                style={{ color: '#6B7490', borderBottom: '1px solid #DDE1EC', background: '#F8F9FC' }}>
@@ -408,17 +397,16 @@ export default function ReportsPage() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate" style={{ color: '#0E1117' }}>{c.name}</div>
                 <div className="text-xs" style={{ color: '#6B7490' }}>
-                  Last job: {c.lastJob ? new Date(c.lastJob).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                  Last job: {c.lastJob ? new Date(c.lastJob).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'None'}
                 </div>
               </div>
               <div className="text-sm font-mono text-right" style={{ color: '#6B7490' }}>{c.jobs} jobs</div>
-              <div className="text-sm font-bold font-mono text-right w-24" style={{ color: '#0E1117' }}>${c.revenue.toFixed(2)}</div>
+              <div className="text-sm font-bold font-mono text-right w-24" style={{ color: '#0E1117' }}>{'$' + c.revenue.toFixed(2)}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* At-Risk Customers */}
       {dormantCustomers.length > 0 && (
         <div className="mb-8">
           <SectionHeader title="At-Risk Customers" sub="No job in the last 60 days — worth a follow-up" />
@@ -445,14 +433,13 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Customer Health */}
       <div className="mb-8">
         <SectionHeader title="Customer Health" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Total Customers" value={String(customers.length)} icon={Users} color="#4F8EF7" />
           <StatCard
             label="Cards on File"
-            value={String(customers.filter(c => ['authorized','active'].includes(c.card_status)).length)}
+            value={String(customers.filter(c => ['authorized', 'active'].includes(c.card_status)).length)}
             sub="Authorized"
             icon={DollarSign}
             color="#3DBF7F"
