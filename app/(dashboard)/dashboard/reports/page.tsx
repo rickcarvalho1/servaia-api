@@ -6,11 +6,12 @@ import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { DollarSign, Briefcase, Users, TrendingUp, Download, Calendar, Award } from 'lucide-react'
 
-type Period = 'month' | 'quarter' | 'year' | 'all'
+type Period = 'today' | 'week' | 'month' | 'year' | 'all'
 
 const PERIODS: { label: string; value: Period }[] = [
+  { label: 'Today', value: 'today' },
+  { label: 'This Week', value: 'week' },
   { label: 'This Month', value: 'month' },
-  { label: 'This Quarter', value: 'quarter' },
   { label: 'This Year', value: 'year' },
   { label: 'All Time', value: 'all' },
 ]
@@ -19,11 +20,14 @@ const SERVICE_COLORS = ['#4F8EF7', '#3DBF7F', '#E8B84B', '#E05252', '#9B59B6', '
 
 function getPeriodStart(period: Period): Date | null {
   const now = new Date()
-  if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1)
-  if (period === 'quarter') {
-    const q = Math.floor(now.getMonth() / 3)
-    return new Date(now.getFullYear(), q * 3, 1)
+  if (period === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (period === 'week') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - d.getDay())
+    d.setHours(0, 0, 0, 0)
+    return d
   }
+  if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1)
   if (period === 'year') return new Date(now.getFullYear(), 0, 1)
   return null
 }
