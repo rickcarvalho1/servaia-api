@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     let emailSent = false;
     let smsSent = false;
 
-    // ── SMS (primary) — only mark success if status is sent/delivered ──
+    // ── SMS ──
     if (phone) {
       const twilioSid   = process.env.TWILIO_ACCOUNT_SID;
       const twilioAuth  = process.env.TWILIO_AUTH_TOKEN;
@@ -82,32 +82,15 @@ export async function POST(req: NextRequest) {
             }
           );
 
-          if (twilioRes.ok) {
-            const twilioData = await twilioRes.json()
-            // Only mark SMS as sent if status is queued or sent
-            // If 10DLC not approved, Twilio returns status 'failed' or error code 30007/30034
-            const status = twilioData.status
-            const errorCode = twilioData.error_code
-            if (
-              (status === 'queued' || status === 'sent' || status === 'delivered') &&
-              !errorCode
-            ) {
-              smsSent = true
-            } else {
-              console.warn('Twilio message not delivered:', status, errorCode)
-            }
-          } else {
-            const err = await twilioRes.json();
-            console.error("Twilio error:", err);
-          }
+          if (twilioRes.ok) smsSent = true;
         } catch (err) {
           console.error("SMS send error:", err);
         }
       }
     }
 
-    // ── EMAIL (fallback — sends if SMS failed or no phone) ──
-    if (!smsSent && email) {
+    // ── EMAIL — always send if customer has email ──
+    if (email) {
       try {
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL || "rick@servaiapay.com",
@@ -151,7 +134,7 @@ export async function POST(req: NextRequest) {
 
     if (!emailSent && !smsSent) {
       return NextResponse.json(
-        { error: "Failed to send authorization link via SMS or email" },
+        { error: "Failed to send authorization link" },
         { status: 500 }
       );
     }
