@@ -12,6 +12,20 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    // Supabase puts the token in the URL hash — we need to listen for
+    // the PASSWORD_RECOVERY event which fires when the page loads with a valid token
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setReady(true)
+        }
+      }
+    )
+    return () => subscription.unsubscribe()
+  }, [])
 
   function getStrengthIssue(p: string): string | null {
     if (p.length < 8) return 'At least 8 characters required'
@@ -54,6 +68,21 @@ export default function ResetPasswordPage() {
         <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
             className="text-2xl font-semibold text-white mb-2">Password updated!</h2>
         <p className="text-sm text-white/40">Redirecting you to the dashboard...</p>
+      </div>
+    </div>
+  )
+
+  if (!ready) return (
+    <div className="min-h-screen bg-[#0E1117] flex flex-col items-center justify-center px-4">
+      <div className="w-full max-w-md text-center">
+        <div className="flex justify-center mb-4">
+          <svg className="animate-spin h-8 w-8 text-white/20" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+        <p className="text-sm text-white/40">Verifying your reset link...</p>
+        <p className="text-xs text-white/20 mt-2">If this takes too long, request a new reset link.</p>
       </div>
     </div>
   )
@@ -135,7 +164,9 @@ export default function ResetPasswordPage() {
               </div>
             )}
 
-            <button type="submit" disabled={loading || !!strengthIssue || !passwordsMatch || !confirm}
+            <button
+              type="submit"
+              disabled={loading || !!strengthIssue || !passwordsMatch || !confirm}
               className="w-full py-3.5 bg-blue-500 text-white font-bold text-sm rounded-lg hover:bg-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed tracking-wide">
               {loading ? 'Updating...' : 'Update Password →'}
             </button>
