@@ -125,7 +125,6 @@ export default function NewJobPage() {
 
   if (loading) return <div className="p-8 text-[#6B7490] text-sm">Loading...</div>
 
-  // Success screen
   if (success) {
     return (
       <div className="p-8 max-w-lg mx-auto">
@@ -253,7 +252,7 @@ export default function NewJobPage() {
                       type="number"
                       value={selected.price}
                       onChange={e => updateServicePrice(svc.id, e.target.value)}
-                      className="w-20 px-2 py-1 border border-[#DDE1EC] rounded text-sm text-right font-mono outline-none focus:border-[#4F8EF7]"
+                      className="w-20 px-2 py-1 border border-[#DDE1EC] rounded text-sm text-right font-mono text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white"
                       onClick={e => e.stopPropagation()}
                     />
                   </div>
@@ -274,14 +273,22 @@ export default function NewJobPage() {
         {/* Custom line items */}
         {addons.map((addon, i) => (
           <div key={i} className="flex items-center gap-2 mb-2">
-            <input type="text" value={addon.name} onChange={e => updateAddon(i, 'name', e.target.value)}
+            <input
+              type="text"
+              value={addon.name}
+              onChange={e => updateAddon(i, 'name', e.target.value)}
               placeholder="Custom item name"
-              className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+              className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
+            />
             <div className="flex items-center gap-1">
               <span className="text-[#6B7490] text-sm">$</span>
-              <input type="number" value={addon.price} onChange={e => updateAddon(i, 'price', e.target.value)}
+              <input
+                type="number"
+                value={addon.price}
+                onChange={e => updateAddon(i, 'price', e.target.value)}
                 placeholder="0"
-                className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right font-mono outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+                className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right font-mono text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
+              />
             </div>
             <button onClick={() => removeAddon(i)} className="text-[#6B7490] hover:text-[#E05252]">
               <Trash2 size={15} />
@@ -303,18 +310,25 @@ export default function NewJobPage() {
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
               Crew Member
             </label>
-            <input type="text" value={crewMember} onChange={e => setCrewMember(e.target.value)}
+            <input
+              type="text"
+              value={crewMember}
+              onChange={e => setCrewMember(e.target.value)}
               placeholder="Who completed this job?"
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
+            />
           </div>
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
               Notes (optional)
             </label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)}
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
               placeholder="Any notes about this job..."
               rows={2}
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] resize-none" />
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white resize-none"
+            />
           </div>
         </div>
       </div>
@@ -332,7 +346,9 @@ export default function NewJobPage() {
           </div>
         )}
 
-        <button onClick={handleCharge} disabled={charging || total === 0 || !selectedCustomer}
+        <button
+          onClick={handleCharge}
+          disabled={charging || total === 0 || !selectedCustomer}
           className="w-full py-4 bg-[#3DBF7F] text-white font-bold text-base rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed tracking-wide">
           {charging ? 'Processing...' : `💳 Charge $${total.toFixed(2)}`}
         </button>
