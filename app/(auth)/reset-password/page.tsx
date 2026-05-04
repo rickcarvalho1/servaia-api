@@ -15,16 +15,36 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Supabase puts the token in the URL hash — we need to listen for
-    // the PASSWORD_RECOVERY event which fires when the page loads with a valid token
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          setReady(true)
-        }
+    // Parse the hash fragment from the URL
+    // Supabase puts #access_token=...&type=recovery in the URL
+    const hash = window.location.hash
+    if (!hash) {
+      setError('Invalid or expired reset link. Please request a new one.')
+      setReady(true)
+      return
+    }
+
+    const params = new URLSearchParams(hash.substring(1))
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+    const type = params.get('type')
+
+    if (type !== 'recovery' || !accessToken) {
+      setError('Invalid or expired reset link. Please request a new one.')
+      setReady(true)
+      return
+    }
+
+    // Set the session using the tokens from the URL
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || '',
+    }).then(({ error }) => {
+      if (error) {
+        setError('This reset link has expired. Please request a new one.')
       }
-    )
-    return () => subscription.unsubscribe()
+      setReady(true)
+    })
   }, [])
 
   function getStrengthIssue(p: string): string | null {
@@ -81,8 +101,7 @@ export default function ResetPasswordPage() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
         </div>
-        <p className="text-sm text-white/40">Verifying your reset link...</p>
-        <p className="text-xs text-white/20 mt-2">If this takes too long, request a new reset link.</p>
+        <p className="text-sm text-white/40">Verifying reset link...</p>
       </div>
     </div>
   )
@@ -104,73 +123,92 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-8">
-          <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
-              className="text-2xl font-semibold text-white mb-1">
-            Set new password
-          </h2>
-          <p className="text-sm text-white/40 mb-8">Choose a strong password for your account.</p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold tracking-widest uppercase text-white/40 mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/10 rounded-lg text-sm text-white placeholder-white/20 outline-none focus:border-blue-400 transition-colors"
-              />
-              {password && (
-                <div className="mt-2 space-y-1">
-                  {[
-                    { label: '8+ characters', ok: password.length >= 8 },
-                    { label: 'Uppercase letter', ok: /[A-Z]/.test(password) },
-                    { label: 'Number', ok: /[0-9]/.test(password) },
-                  ].map(rule => (
-                    <div key={rule.label} className="flex items-center gap-2">
-                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${rule.ok ? 'bg-green-400' : 'bg-white/20'}`} />
-                      <span className={`text-xs ${rule.ok ? 'text-green-400' : 'text-white/30'}`}>{rule.label}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold tracking-widest uppercase text-white/40 mb-2">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                placeholder="••••••••"
-                required
-                className={`w-full px-4 py-3 bg-white/[0.06] border rounded-lg text-sm text-white placeholder-white/20 outline-none transition-colors ${
-                  confirm && !passwordsMatch ? 'border-red-500/40' : 'border-white/10 focus:border-blue-400'
-                }`}
-              />
-              {confirm && !passwordsMatch && (
-                <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
-              )}
-            </div>
-
-            {error && (
-              <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+          {error && !password ? (
+            <>
+              <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
+                  className="text-2xl font-semibold text-white mb-4">
+                Reset link invalid
+              </h2>
+              <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 mb-6">
                 {error}
               </div>
-            )}
+              <a href="/forgot-password"
+                className="block w-full py-3.5 bg-blue-500 text-white font-bold text-sm rounded-lg hover:bg-blue-400 transition-all text-center">
+                Request New Reset Link
+              </a>
+            </>
+          ) : (
+            <>
+              <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
+                  className="text-2xl font-semibold text-white mb-1">
+                Set new password
+              </h2>
+              <p className="text-sm text-white/40 mb-8">Choose a strong password for your account.</p>
 
-            <button
-              type="submit"
-              disabled={loading || !!strengthIssue || !passwordsMatch || !confirm}
-              className="w-full py-3.5 bg-blue-500 text-white font-bold text-sm rounded-lg hover:bg-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed tracking-wide">
-              {loading ? 'Updating...' : 'Update Password →'}
-            </button>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-xs font-bold tracking-widest uppercase text-white/40 mb-2">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full px-4 py-3 bg-white/[0.06] border border-white/10 rounded-lg text-sm text-white placeholder-white/20 outline-none focus:border-blue-400 transition-colors"
+                  />
+                  {password && (
+                    <div className="mt-2 space-y-1">
+                      {[
+                        { label: '8+ characters', ok: password.length >= 8 },
+                        { label: 'Uppercase letter', ok: /[A-Z]/.test(password) },
+                        { label: 'Number', ok: /[0-9]/.test(password) },
+                      ].map(rule => (
+                        <div key={rule.label} className="flex items-center gap-2">
+                          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${rule.ok ? 'bg-green-400' : 'bg-white/20'}`} />
+                          <span className={`text-xs ${rule.ok ? 'text-green-400' : 'text-white/30'}`}>{rule.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold tracking-widest uppercase text-white/40 mb-2">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    value={confirm}
+                    onChange={e => setConfirm(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className={`w-full px-4 py-3 bg-white/[0.06] border rounded-lg text-sm text-white placeholder-white/20 outline-none transition-colors ${
+                      confirm && !passwordsMatch ? 'border-red-500/40' : 'border-white/10 focus:border-blue-400'
+                    }`}
+                  />
+                  {confirm && !passwordsMatch && (
+                    <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
+                  )}
+                </div>
+
+                {error && (
+                  <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || !!strengthIssue || !passwordsMatch || !confirm}
+                  className="w-full py-3.5 bg-blue-500 text-white font-bold text-sm rounded-lg hover:bg-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed tracking-wide">
+                  {loading ? 'Updating...' : 'Update Password →'}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>
