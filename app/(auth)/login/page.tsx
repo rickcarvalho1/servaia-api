@@ -14,6 +14,22 @@ export default function LoginPage() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
 
+  function getFriendlyError(msg: string): string {
+    if (msg.toLowerCase().includes('invalid login') || msg.toLowerCase().includes('invalid credentials')) {
+      return 'Incorrect email or password. Please try again.'
+    }
+    if (msg.toLowerCase().includes('email not confirmed')) {
+      return 'Please check your email and confirm your account before signing in.'
+    }
+    if (msg.toLowerCase().includes('too many requests')) {
+      return 'Too many attempts. Please wait a few minutes and try again.'
+    }
+    if (msg.toLowerCase().includes('user not found')) {
+      return 'No account found with that email address.'
+    }
+    return msg
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -22,7 +38,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError(error.message)
+      setError(getFriendlyError(error.message))
       setLoading(false)
       return
     }
@@ -74,6 +90,10 @@ export default function LoginPage() {
                 <label className="block text-xs font-bold tracking-widest uppercase text-white/40">
                   Password
                 </label>
+                <Link href="/forgot-password"
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                  Forgot password?
+                </Link>
               </div>
               <input
                 type="password"
@@ -88,6 +108,13 @@ export default function LoginPage() {
             {error && (
               <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
                 {error}
+                {error.includes('Incorrect email or password') && (
+                  <div className="mt-2">
+                    <Link href="/forgot-password" className="text-blue-400 hover:text-blue-300 underline text-xs">
+                      Forgot your password?
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 
