@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Plus, CheckCircle2, Clock, XCircle, ArrowUpRight, Phone, Mail, Upload, X, Download, AlertCircle } from 'lucide-react'
+import { Users, Plus, CheckCircle2, Clock, XCircle, ArrowUpRight, Phone, Mail, Upload, X, Download, AlertCircle, Search } from 'lucide-react'
 
 export default function CustomersPage() {
   const supabase = createClient()
@@ -14,6 +14,8 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [businessId, setBusinessId] = useState('')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'failed' | 'not_required'>('all')
   const [showImport, setShowImport] = useState(false)
   const [csvRows, setCsvRows] = useState<any[]>([])
   const [csvError, setCsvError] = useState<string | null>(null)
@@ -49,6 +51,17 @@ export default function CustomersPage() {
   const active  = customers.filter(c => c.card_status === 'active').length
   const pending = customers.filter(c => c.card_status === 'pending').length
   const failed  = customers.filter(c => c.card_status === 'failed').length
+
+  const filtered = customers.filter(c => {
+    const name = (c.full_name || c.name || '').toLowerCase()
+    const phone = (c.phone || '').toLowerCase()
+    const email = (c.email || '').toLowerCase()
+    const address = (c.address || '').toLowerCase()
+    const q = search.toLowerCase()
+    const matchesSearch = !q || name.includes(q) || phone.includes(q) || email.includes(q) || address.includes(q)
+    const matchesStatus = statusFilter === 'all' || c.card_status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -92,23 +105,20 @@ export default function CustomersPage() {
     if (!csvRows.length || !businessId) return
     setImporting(true)
     setCsvError(null)
-
     let success = 0
     let skipped = 0
-
     for (const row of csvRows) {
       const { error } = await supabase.from('customers').insert({
-        business_id:    businessId,
-        full_name:      row.full_name,
-        phone:          row.phone || null,
-        email:          row.email || null,
-        address:        row.address || null,
-        card_status:    'not_required',
+        business_id: businessId,
+        full_name: row.full_name,
+        phone: row.phone || null,
+        email: row.email || null,
+        address: row.address || null,
+        card_status: 'not_required',
         payment_method: 'cash_check',
       })
       if (error) { skipped++ } else { success++ }
     }
-
     setImportResult({ success, skipped })
     setImporting(false)
     await loadCustomers()
@@ -154,8 +164,7 @@ export default function CustomersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 w-full lg:w-auto">
-          <button
-            onClick={() => { setShowImport(true); setImportResult(null); setCsvRows([]); setCsvError(null) }}
+          <button onClick={() => { setShowImport(true); setImportResult(null); setCsvRows([]); setCsvError(null) }}
             className="flex items-center justify-center gap-2 px-4 py-2.5 text-[#0E1117] text-sm font-semibold rounded-lg border border-[#DDE1EC] bg-white hover:bg-gray-50 transition-colors flex-1 lg:flex-none">
             <Upload size={15} /> Import CSV
           </button>
@@ -163,6 +172,36 @@ export default function CustomersPage() {
             className="flex items-center justify-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-lg bg-[#0E1117] hover:bg-[#4F8EF7] transition-colors flex-1 lg:flex-none">
             <Plus size={16} /> Add Customer
           </Link>
+        </div>
+      </div>
+
+      {/* Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9BA3B8]" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, phone, email, or address..."
+            className="w-full pl-9 pr-4 py-2.5 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
+          />
+        </div>
+        <div className="flex gap-1 bg-white rounded-lg p-1 border border-[#DDE1EC] overflow-x-auto">
+          {[
+            { label: 'All', value: 'all' },
+            { label: 'Card on file', value: 'active' },
+            { label: 'Pending', value: 'pending' },
+            { label: 'Failed', value: 'failed' },
+            { label: 'No card', value: 'not_required' },
+          ].map(f => (
+            <button key={f.value} onClick={() => setStatusFilter(f.value as any)}
+              className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap transition-all ${
+                statusFilter === f.value ? 'bg-[#0E1117] text-white' : 'text-[#6B7490] hover:text-[#0E1117]'
+              }`}>
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -177,6 +216,11 @@ export default function CustomersPage() {
         <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[rgba(224,82,82,0.1)] text-[#E05252] border border-[rgba(224,82,82,0.2)]">
           {failed} Card failed
         </div>
+        {search || statusFilter !== 'all' ? (
+          <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[rgba(79,142,247,0.1)] text-[#4F8EF7] border border-[rgba(79,142,247,0.2)]">
+            {filtered.length} shown
+          </div>
+        ) : null}
       </div>
 
       {/* Customer list */}
@@ -197,11 +241,21 @@ export default function CustomersPage() {
               </Link>
             </div>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center">
+            <Search size={32} className="mx-auto mb-3 text-[#DDE1EC]" />
+            <p className="font-semibold text-[#0E1117] mb-1">No customers match</p>
+            <p className="text-sm text-[#6B7490]">Try a different search or filter.</p>
+            <button onClick={() => { setSearch(''); setStatusFilter('all') }}
+              className="mt-3 text-sm text-[#4F8EF7] hover:underline">
+              Clear filters
+            </button>
+          </div>
         ) : (
           <>
             {/* Desktop */}
             <div className="hidden lg:block">
-              {customers.map((customer: any) => (
+              {filtered.map((customer: any) => (
                 <Link key={customer.id} href={`/dashboard/customers/${customer.id}`}
                   className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors border-b border-[#DDE1EC] last:border-0">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[rgba(79,142,247,0.1)] text-[#4F8EF7]">
@@ -242,7 +296,7 @@ export default function CustomersPage() {
 
             {/* Mobile */}
             <div className="lg:hidden p-4 space-y-3">
-              {customers.map((customer: any) => (
+              {filtered.map((customer: any) => (
                 <Link key={customer.id} href={`/dashboard/customers/${customer.id}`}
                   className="block bg-white border border-[#DDE1EC] rounded-lg p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start gap-3">
@@ -302,40 +356,26 @@ export default function CustomersPage() {
 
             {!importResult ? (
               <>
-                {/* Template download */}
                 <button onClick={downloadTemplate}
                   className="flex items-center gap-2 text-sm text-[#4F8EF7] hover:underline mb-4">
                   <Download size={14} /> Download CSV template
                 </button>
-
-                {/* Required columns note */}
                 <div className="bg-[#F8F9FC] border border-[#DDE1EC] rounded-lg px-4 py-3 mb-4">
                   <p className="text-xs font-bold text-[#0E1117] mb-1">Required columns:</p>
                   <p className="text-xs text-[#6B7490]"><strong>name</strong> — customer full name</p>
                   <p className="text-xs text-[#6B7490] mt-0.5">Optional: <strong>phone</strong>, <strong>email</strong>, <strong>address</strong></p>
-                  <p className="text-xs text-[#6B7490] mt-1">Imported customers default to Cash/Check payment method. You can update individually after import.</p>
+                  <p className="text-xs text-[#6B7490] mt-1">Imported customers default to Cash/Check. Update individually after import.</p>
                 </div>
-
-                {/* File upload */}
                 <div className="mb-4">
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileChange}
-                    className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0E1117] file:text-white"
-                  />
+                  <input ref={fileRef} type="file" accept=".csv" onChange={handleFileChange}
+                    className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0E1117] file:text-white" />
                 </div>
-
-                {/* Error */}
                 {csvError && (
                   <div className="flex items-start gap-2 px-4 py-3 bg-[rgba(224,82,82,0.1)] border border-[rgba(224,82,82,0.2)] rounded-lg text-sm text-[#E05252] mb-4">
                     <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
                     {csvError}
                   </div>
                 )}
-
-                {/* Preview */}
                 {csvRows.length > 0 && (
                   <div className="mb-4">
                     <p className="text-xs font-bold text-[#0E1117] mb-2">{csvRows.length} customers ready to import:</p>
@@ -357,22 +397,15 @@ export default function CustomersPage() {
                     </div>
                   </div>
                 )}
-
                 <div className="flex gap-3">
-                  <button onClick={resetImport}
-                    className="flex-1 py-3 border border-[#DDE1EC] text-[#6B7490] text-sm rounded-lg hover:bg-[#F8F9FC]">
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleImport}
-                    disabled={importing || csvRows.length === 0}
+                  <button onClick={resetImport} className="flex-1 py-3 border border-[#DDE1EC] text-[#6B7490] text-sm rounded-lg hover:bg-[#F8F9FC]">Cancel</button>
+                  <button onClick={handleImport} disabled={importing || csvRows.length === 0}
                     className="flex-[2] py-3 bg-[#0E1117] text-white font-bold text-sm rounded-lg hover:bg-[#4F8EF7] transition-colors disabled:opacity-50">
                     {importing ? `Importing ${csvRows.length} customers...` : `Import ${csvRows.length} Customers`}
                   </button>
                 </div>
               </>
             ) : (
-              /* Success screen */
               <div className="text-center py-4">
                 <div className="w-16 h-16 rounded-full bg-[rgba(61,191,127,0.1)] border-2 border-[#3DBF7F] flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 size={32} className="text-[#3DBF7F]" />
@@ -382,15 +415,10 @@ export default function CustomersPage() {
                   <strong className="text-[#3DBF7F]">{importResult.success}</strong> customers imported successfully
                 </p>
                 {importResult.skipped > 0 && (
-                  <p className="text-[#6B7490] text-sm mb-4">
-                    <strong className="text-[#E05252]">{importResult.skipped}</strong> skipped (duplicates or errors)
-                  </p>
+                  <p className="text-[#6B7490] text-sm mb-4"><strong className="text-[#E05252]">{importResult.skipped}</strong> skipped</p>
                 )}
-                <p className="text-xs text-[#6B7490] mb-6">All imported customers are set to Cash/Check. Visit each customer to send a card authorization link if needed.</p>
-                <button onClick={resetImport}
-                  className="w-full py-3 bg-[#0E1117] text-white font-bold text-sm rounded-lg hover:bg-[#4F8EF7] transition-colors">
-                  Done
-                </button>
+                <p className="text-xs text-[#6B7490] mb-6">All imported customers set to Cash/Check. Visit each customer to send a card authorization link if needed.</p>
+                <button onClick={resetImport} className="w-full py-3 bg-[#0E1117] text-white font-bold text-sm rounded-lg hover:bg-[#4F8EF7] transition-colors">Done</button>
               </div>
             )}
           </div>

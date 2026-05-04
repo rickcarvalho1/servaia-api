@@ -232,8 +232,7 @@ export default function CrewPage() {
           )}
           <button
             onClick={() => { setView("jobs"); setSelectedJob(null); setPhotos([]); setCompleteResult(null); setPaymentNote(''); loadJobs(selectedDate); router.push('/crew'); }}
-            className="w-full py-3 bg-[#0E1117] text-white font-semibold rounded-xl"
-          >
+            className="w-full py-3 bg-[#0E1117] text-white font-semibold rounded-xl">
             Back to jobs
           </button>
         </div>
@@ -312,12 +311,11 @@ export default function CrewPage() {
                 placeholder="e.g. Check #1234, Cash, Zelle... (optional)"
                 value={paymentNote}
                 onChange={e => setPaymentNote(e.target.value)}
-                className="w-full px-3 py-2.5 border border-[#DDE1EC] rounded-xl text-sm text-[#0E1117] placeholder-[#6B7490]/50 outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
+                className="w-full px-3 py-2.5 border border-[#DDE1EC] rounded-xl text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
               />
             </div>
           )}
 
-          {/* No card warning — only for card customers with no card */}
           {!isManualPayment && !cardActive && (
             <div className="rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-700">
               ⚠️ No card on file — cannot charge this customer.
