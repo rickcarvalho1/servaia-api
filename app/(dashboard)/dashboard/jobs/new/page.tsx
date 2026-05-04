@@ -22,6 +22,7 @@ export default function NewJobPage() {
   const [error, setError]           = useState<string | null>(null)
   const [success, setSuccess]       = useState<any>(null)
   const [businessId, setBusinessId] = useState('')
+  const [customerPrices, setCustomerPrices] = useState<Record<string, number>>({})
 
   useEffect(() => {
     async function load() {
@@ -40,7 +41,7 @@ export default function NewJobPage() {
       setCrewMember(member.full_name)
 
       const [{ data: custs }, { data: svcs }] = await Promise.all([
-        supabase.from('customers').select('*').eq('business_id', bizId).eq('card_status', 'active').order('full_name'),
+        supabase.from('customers').select('*').eq('business_id', bizId).order('full_name'),
         supabase.from('services').select('*').eq('business_id', bizId).eq('active', true).order('sort_order'),
       ])
 
@@ -51,6 +52,34 @@ export default function NewJobPage() {
     load()
   }, [])
 
+  // When customer changes, load their custom pricing
+  useEffect(() => {
+    if (!selectedCustomer) {
+      setCustomerPrices({})
+      setSelectedServices([])
+      return
+    }
+    async function loadCustomerPrices() {
+      const { data } = await supabase
+        .from('customer_services')
+        .select('service_id, price')
+        .eq('customer_id', selectedCustomer.id)
+      const priceMap: Record<string, number> = {}
+      if (data) {
+        data.forEach((row: any) => {
+          priceMap[row.service_id] = row.price
+        })
+      }
+      setCustomerPrices(priceMap)
+      setSelectedServices([])
+    }
+    loadCustomerPrices()
+  }, [selectedCustomer])
+
+  function getServicePrice(svc: any): number {
+    return customerPrices[svc.id] !== undefined ? customerPrices[svc.id] : svc.default_price
+  }
+
   function toggleService(svc: any) {
     const exists = selectedServices.find(s => s.serviceId === svc.id)
     if (exists) {
@@ -59,7 +88,7 @@ export default function NewJobPage() {
       setSelectedServices(prev => [...prev, {
         serviceId: svc.id,
         name:      svc.name,
-        price:     svc.default_price.toString(),
+        price:     getServicePrice(svc).toString(),
         isCustom:  false,
       }])
     }
@@ -92,6 +121,12 @@ export default function NewJobPage() {
 
   const total = allLineItems.reduce((s, item) => s + (parseFloat(item.price) || 0), 0)
 
+  const isManualPayment = selectedCustomer?.payment_method === 'cash_check' ||
+                          selectedCustomer?.payment_method === 'invoice'
+  const cardActive = selectedCustomer?.card_status === 'active' ||
+                     selectedCustomer?.card_status === 'authorized'
+  const canCharge = isManualPayment || cardActive
+
   async function handleCharge() {
     if (!selectedCustomer) { setError('Please select a customer'); return }
     if (allLineItems.length === 0) { setError('Please select at least one service'); return }
@@ -113,7 +148,6 @@ export default function NewJobPage() {
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Charge failed')
-
       setSuccess(data)
 
     } catch (err: any) {
@@ -129,24 +163,24 @@ export default function NewJobPage() {
     return (
       <div className="p-8 max-w-lg mx-auto">
         <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-8 text-center">
-          <div className="w-20 h-20 rounded-full bg-[rgba(61,191,127,0.1)] border-2 border-[#3DBF7F] flex items-center justify-center mx-auto mb-6"
-               style={{ animation: 'popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both' }}>
+          <div className="w-20 h-20 rounded-full bg-[rgba(61,191,127,0.1)] border-2 border-[#3DBF7F] flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} className="text-[#3DBF7F]" />
           </div>
           <h2 className="text-3xl font-bold text-[#0E1117] mb-2"
               style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}>
-            Payment Sent!
+            {isManualPayment ? 'Job Complete!' : 'Payment Sent!'}
           </h2>
-          <div className="text-5xl font-bold text-[#3DBF7F] font-mono mb-2">
+          <div className="text-5xl font-bold font-mono mb-2"
+               style={{ color: isManualPayment ? '#E8B84B' : '#3DBF7F' }}>
             ${success.amount}
           </div>
           <p className="text-[#6B7490] text-sm mb-6">
-            Charged to {selectedCustomer?.full_name || selectedCustomer?.name}'s card on file
+            {isManualPayment
+              ? `Collect payment manually from ${selectedCustomer?.full_name || selectedCustomer?.name}`
+              : `Charged to ${selectedCustomer?.full_name || selectedCustomer?.name}'s card on file`}
           </p>
           <div className="bg-[#F8F9FC] rounded-lg p-4 text-left mb-6">
-            <div className="text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-3">
-              Services Charged
-            </div>
+            <div className="text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-3">Services</div>
             {allLineItems.map((item, i) => (
               <div key={i} className="flex justify-between text-sm py-1.5 border-b border-[#DDE1EC] last:border-0">
                 <span className="text-[#0E1117]">{item.name}</span>
@@ -165,6 +199,7 @@ export default function NewJobPage() {
               setSelectedServices([])
               setAddons([])
               setNotes('')
+              setCustomerPrices({})
             }}
               className="flex-1 py-3 border border-[#DDE1EC] text-[#6B7490] text-sm rounded-lg hover:bg-[#F8F9FC]">
               New Job
@@ -197,165 +232,174 @@ export default function NewJobPage() {
         <h2 className="font-semibold text-[#0E1117] mb-4">Select Customer</h2>
         {customers.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-[#6B7490] text-sm mb-3">No customers with a card on file yet.</p>
-            <Link href="/dashboard/customers/new"
-              className="text-[#4F8EF7] text-sm font-semibold hover:underline">
+            <p className="text-[#6B7490] text-sm mb-3">No customers yet.</p>
+            <Link href="/dashboard/customers/new" className="text-[#4F8EF7] text-sm font-semibold hover:underline">
               Add a customer →
             </Link>
           </div>
         ) : (
           <div className="grid gap-2">
-            {customers.map(c => (
-              <button key={c.id} onClick={() => setSelectedCustomer(c)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
-                  selectedCustomer?.id === c.id
-                    ? 'border-[#4F8EF7] bg-[rgba(79,142,247,0.06)]'
-                    : 'border-[#DDE1EC] hover:border-[#4F8EF7]/50'
-                }`}>
-                <div className="w-9 h-9 rounded-full bg-[rgba(79,142,247,0.1)] text-[#4F8EF7] flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  {(c.full_name || c.name)?.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-[#0E1117]">{c.full_name || c.name}</div>
-                  <div className="text-xs text-[#6B7490]">{c.address || c.phone}</div>
-                </div>
-                {selectedCustomer?.id === c.id && (
-                  <CheckCircle2 size={16} className="text-[#4F8EF7] flex-shrink-0" />
-                )}
-              </button>
-            ))}
+            {customers.map(c => {
+              const hasCard = c.card_status === 'active' || c.card_status === 'authorized'
+              const isManual = c.payment_method === 'cash_check' || c.payment_method === 'invoice'
+              return (
+                <button key={c.id} onClick={() => setSelectedCustomer(c)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
+                    selectedCustomer?.id === c.id
+                      ? 'border-[#4F8EF7] bg-[rgba(79,142,247,0.06)]'
+                      : 'border-[#DDE1EC] hover:border-[#4F8EF7]/50'
+                  }`}>
+                  <div className="w-9 h-9 rounded-full bg-[rgba(79,142,247,0.1)] text-[#4F8EF7] flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    {(c.full_name || c.name)?.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-[#0E1117]">{c.full_name || c.name}</div>
+                    <div className="text-xs text-[#6B7490]">{c.address || c.phone}</div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {hasCard && <span className="text-xs text-[#3DBF7F] font-medium">💳 Card</span>}
+                    {isManual && <span className="text-xs text-[#E8B84B] font-medium">💵 Manual</span>}
+                    {!hasCard && !isManual && <span className="text-xs text-[#E05252] font-medium">No card</span>}
+                    {selectedCustomer?.id === c.id && <CheckCircle2 size={16} className="text-[#4F8EF7]" />}
+                  </div>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
 
       {/* Services */}
-      <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6 mb-4">
-        <h2 className="font-semibold text-[#0E1117] mb-4">Select Services</h2>
-        <div className="grid gap-2 mb-4">
-          {services.map(svc => {
-            const selected = selectedServices.find(s => s.serviceId === svc.id)
-            return (
-              <div key={svc.id}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
-                  selected
-                    ? 'border-[#4F8EF7] bg-[rgba(79,142,247,0.06)]'
-                    : 'border-[#DDE1EC]'
-                }`}>
-                <button onClick={() => toggleService(svc)} className="flex items-center gap-3 flex-1 text-left">
-                  <span className="text-xl">{svc.emoji}</span>
-                  <span className="text-sm font-medium text-[#0E1117]">{svc.name}</span>
-                </button>
-                {selected ? (
-                  <div className="flex items-center gap-1">
-                    <span className="text-[#6B7490] text-sm">$</span>
-                    <input
-                      type="number"
-                      value={selected.price}
-                      onChange={e => updateServicePrice(svc.id, e.target.value)}
-                      className="w-20 px-2 py-1 border border-[#DDE1EC] rounded text-sm text-right font-mono text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white"
-                      onClick={e => e.stopPropagation()}
-                    />
-                  </div>
-                ) : (
-                  <span className="text-sm text-[#6B7490] font-mono">${svc.default_price}</span>
-                )}
-                <button onClick={() => toggleService(svc)}
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                    selected ? 'bg-[#4F8EF7] border-[#4F8EF7] text-white' : 'border-[#DDE1EC]'
+      {selectedCustomer && (
+        <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6 mb-4">
+          <h2 className="font-semibold text-[#0E1117] mb-1">Select Services</h2>
+          {Object.keys(customerPrices).length > 0 && (
+            <p className="text-xs text-[#4F8EF7] mb-4">Custom pricing applied for {selectedCustomer.full_name || selectedCustomer.name}</p>
+          )}
+          <div className="grid gap-2 mb-4">
+            {services.map(svc => {
+              const selected = selectedServices.find(s => s.serviceId === svc.id)
+              const price = getServicePrice(svc)
+              const hasCustomPrice = customerPrices[svc.id] !== undefined
+              return (
+                <div key={svc.id}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
+                    selected ? 'border-[#4F8EF7] bg-[rgba(79,142,247,0.06)]' : 'border-[#DDE1EC]'
                   }`}>
-                  {selected && <span className="text-xs">✓</span>}
-                </button>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Custom line items */}
-        {addons.map((addon, i) => (
-          <div key={i} className="flex items-center gap-2 mb-2">
-            <input
-              type="text"
-              value={addon.name}
-              onChange={e => updateAddon(i, 'name', e.target.value)}
-              placeholder="Custom item name"
-              className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
-            />
-            <div className="flex items-center gap-1">
-              <span className="text-[#6B7490] text-sm">$</span>
-              <input
-                type="number"
-                value={addon.price}
-                onChange={e => updateAddon(i, 'price', e.target.value)}
-                placeholder="0"
-                className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right font-mono text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
-              />
-            </div>
-            <button onClick={() => removeAddon(i)} className="text-[#6B7490] hover:text-[#E05252]">
-              <Trash2 size={15} />
-            </button>
+                  <button onClick={() => toggleService(svc)} className="flex items-center gap-3 flex-1 text-left">
+                    <span className="text-xl">{svc.emoji}</span>
+                    <div>
+                      <span className="text-sm font-medium text-[#0E1117]">{svc.name}</span>
+                      {hasCustomPrice && <span className="ml-2 text-xs text-[#4F8EF7]">custom</span>}
+                    </div>
+                  </button>
+                  {selected ? (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[#6B7490] text-sm">$</span>
+                      <input
+                        type="number"
+                        value={selected.price}
+                        onChange={e => updateServicePrice(svc.id, e.target.value)}
+                        className="w-20 px-2 py-1 border border-[#DDE1EC] rounded text-sm text-right font-mono text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white"
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-sm text-[#6B7490] font-mono">${price.toFixed(2)}</span>
+                  )}
+                  <button onClick={() => toggleService(svc)}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                      selected ? 'bg-[#4F8EF7] border-[#4F8EF7] text-white' : 'border-[#DDE1EC]'
+                    }`}>
+                    {selected && <span className="text-xs">✓</span>}
+                  </button>
+                </div>
+              )
+            })}
           </div>
-        ))}
 
-        <button onClick={addAddon}
-          className="flex items-center gap-2 text-sm text-[#4F8EF7] hover:underline mt-2">
-          <Plus size={14} /> Add custom line item
-        </button>
-      </div>
+          {addons.map((addon, i) => (
+            <div key={i} className="flex items-center gap-2 mb-2">
+              <input type="text" value={addon.name} onChange={e => updateAddon(i, 'name', e.target.value)}
+                placeholder="Custom item name"
+                className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
+              <div className="flex items-center gap-1">
+                <span className="text-[#6B7490] text-sm">$</span>
+                <input type="number" value={addon.price} onChange={e => updateAddon(i, 'price', e.target.value)}
+                  placeholder="0"
+                  className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right font-mono text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
+              </div>
+              <button onClick={() => removeAddon(i)} className="text-[#6B7490] hover:text-[#E05252]">
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+
+          <button onClick={addAddon} className="flex items-center gap-2 text-sm text-[#4F8EF7] hover:underline mt-2">
+            <Plus size={14} /> Add custom line item
+          </button>
+        </div>
+      )}
 
       {/* Crew + Notes */}
-      <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6 mb-4">
-        <h2 className="font-semibold text-[#0E1117] mb-4">Job Details</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
-              Crew Member
-            </label>
-            <input
-              type="text"
-              value={crewMember}
-              onChange={e => setCrewMember(e.target.value)}
-              placeholder="Who completed this job?"
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">
-              Notes (optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Any notes about this job..."
-              rows={2}
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white resize-none"
-            />
+      {selectedCustomer && (
+        <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6 mb-4">
+          <h2 className="font-semibold text-[#0E1117] mb-4">Job Details</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Crew Member</label>
+              <input type="text" value={crewMember} onChange={e => setCrewMember(e.target.value)}
+                placeholder="Who completed this job?"
+                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Notes (optional)</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)}
+                placeholder="Any notes about this job..."
+                rows={2}
+                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white resize-none" />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Total + Charge */}
-      <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-[#6B7490] text-sm font-medium">Total to Charge</span>
-          <span className="text-3xl font-bold text-[#0E1117] font-mono">${total.toFixed(2)}</span>
-        </div>
-
-        {error && (
-          <div className="px-4 py-3 bg-[rgba(224,82,82,0.1)] border border-[rgba(224,82,82,0.2)] rounded-lg text-sm text-[#E05252] mb-4">
-            {error}
+      {selectedCustomer && (
+        <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[#6B7490] text-sm font-medium">Total to Charge</span>
+            <span className="text-3xl font-bold text-[#0E1117] font-mono">${total.toFixed(2)}</span>
           </div>
-        )}
 
-        <button
-          onClick={handleCharge}
-          disabled={charging || total === 0 || !selectedCustomer}
-          className="w-full py-4 bg-[#3DBF7F] text-white font-bold text-base rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed tracking-wide">
-          {charging ? 'Processing...' : `💳 Charge $${total.toFixed(2)}`}
-        </button>
-        <p className="text-xs text-[#6B7490] text-center mt-3">
-          Card will be charged immediately. Customer receives a text confirmation.
-        </p>
-      </div>
+          {!canCharge && (
+            <div className="px-4 py-3 bg-[rgba(232,160,32,0.1)] border border-[rgba(232,160,32,0.2)] rounded-lg text-sm text-[#E8A020] mb-4">
+              ⚠️ This customer has no card on file. Send them an authorization link from the customer page first.
+            </div>
+          )}
+
+          {error && (
+            <div className="px-4 py-3 bg-[rgba(224,82,82,0.1)] border border-[rgba(224,82,82,0.2)] rounded-lg text-sm text-[#E05252] mb-4">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleCharge}
+            disabled={charging || total === 0 || !canCharge}
+            className={`w-full py-4 text-white font-bold text-base rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed tracking-wide ${
+              isManualPayment ? 'bg-[#E8B84B] hover:bg-yellow-500' : 'bg-[#3DBF7F] hover:bg-green-500'
+            }`}>
+            {charging ? 'Processing...' : isManualPayment
+              ? `✓ Mark Complete — $${total.toFixed(2)}`
+              : `💳 Charge $${total.toFixed(2)}`}
+          </button>
+          <p className="text-xs text-[#6B7490] text-center mt-3">
+            {isManualPayment
+              ? 'Job will be marked complete. Collect payment manually.'
+              : 'Card will be charged immediately. Customer receives a receipt.'}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
