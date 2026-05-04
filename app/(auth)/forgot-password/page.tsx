@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
     setError(null)
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://app.servaiapay.com/reset-password',
+      redirectTo: 'https://app.servaiapay.com/auth/callback?next=/reset-password',
     })
 
     if (error) {
