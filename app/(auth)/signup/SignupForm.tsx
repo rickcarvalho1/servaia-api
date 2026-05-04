@@ -57,6 +57,25 @@ const FALLBACK_SERVICES = [
 
 type Step = 1 | 2 | 3
 
+function PasswordStrength({ password }: { password: string }) {
+  if (!password) return null
+  const rules = [
+    { label: '8+ characters', ok: password.length >= 8 },
+    { label: 'Uppercase letter', ok: /[A-Z]/.test(password) },
+    { label: 'Number', ok: /[0-9]/.test(password) },
+  ]
+  return (
+    <div className="mt-2 space-y-1">
+      {rules.map(rule => (
+        <div key={rule.label} className="flex items-center gap-2">
+          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${rule.ok ? 'bg-green-400' : 'bg-white/20'}`} />
+          <span className={`text-xs transition-colors ${rule.ok ? 'text-green-400' : 'text-white/30'}`}>{rule.label}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function SignupForm() {
   const router   = useRouter()
   const searchParams = useSearchParams()
@@ -110,18 +129,20 @@ export default function SignupForm() {
     setServices(defaults.map(s => ({ ...s })))
   }
 
+  function getPasswordError(): string | null {
+    if (password.length < 8) return 'Password must be at least 8 characters'
+    if (!/[A-Z]/.test(password)) return 'Password must include at least one uppercase letter'
+    if (!/[0-9]/.test(password)) return 'Password must include at least one number'
+    return null
+  }
+
   async function handleStep1(e: React.FormEvent) {
     e.preventDefault()
-    if (password !== confirmPw) {
-      setError('Passwords do not match')
-      return
-    }
+    const pwError = getPasswordError()
+    if (pwError) { setError(pwError); return }
+    if (password !== confirmPw) { setError('Passwords do not match'); return }
     setError(null)
-    if (inviteData) {
-      setStep(3)
-    } else {
-      setStep(2)
-    }
+    if (inviteData) { setStep(3) } else { setStep(2) }
   }
 
   async function handleStep2(e: React.FormEvent) {
@@ -145,7 +166,6 @@ export default function SignupForm() {
       if (authErr || !authData.user) throw new Error(authErr?.message || 'Signup failed')
 
       if (inviteData) {
-        // Handle invite signup
         const { data: existingMember } = await supabase
           .from('team_members')
           .select('id')
@@ -154,34 +174,12 @@ export default function SignupForm() {
           .single()
 
         if (existingMember) {
-          // Update existing member record
-          await supabase
-            .from('team_members')
-            .update({
-              user_id: authData.user.id,
-              full_name: ownerName,
-              active: true,
-            })
-            .eq('id', existingMember.id)
+          await supabase.from('team_members').update({ user_id: authData.user.id, full_name: ownerName, active: true }).eq('id', existingMember.id)
         } else {
-          // Create new member record
-          await supabase.from('team_members').insert({
-            business_id: inviteData.business_id,
-            user_id:     authData.user.id,
-            full_name:   ownerName,
-            email,
-            phone,
-            role:        inviteData.role,
-            active:      true,
-          })
+          await supabase.from('team_members').insert({ business_id: inviteData.business_id, user_id: authData.user.id, full_name: ownerName, email, phone, role: inviteData.role, active: true })
         }
 
-        // Mark invite as used
-        await supabase
-          .from('invite_tokens')
-          .update({ used: true, used_at: new Date().toISOString() })
-          .eq('token', inviteToken)
-
+        await supabase.from('invite_tokens').update({ used: true, used_at: new Date().toISOString() }).eq('token', inviteToken)
         router.push('/dashboard')
         router.refresh()
         return
@@ -189,44 +187,19 @@ export default function SignupForm() {
 
       const { data: biz, error: bizErr } = await supabase
         .from('service_companies')
-        .insert({
-          name:        bizName,
-          owner_name:  ownerName,
-          owner_email: email,
-          owner_phone: phone,
-          trade,
-          status:      'active',
-        })
+        .insert({ name: bizName, owner_name: ownerName, owner_email: email, owner_phone: phone, trade, status: 'active' })
         .select()
         .single()
 
       if (bizErr || !biz) throw new Error(bizErr?.message || 'Could not create business')
 
-      await supabase.from('team_members').insert({
-        business_id: biz.id,
-        user_id:     authData.user.id,
-        full_name:   ownerName,
-        email,
-        phone,
-        role:        'owner',
-        active:      true,
-      })
+      await supabase.from('team_members').insert({ business_id: biz.id, user_id: authData.user.id, full_name: ownerName, email, phone, role: 'owner', active: true })
 
       const serviceRows = services
         .filter(s => s.name.trim() && s.price > 0)
-        .map((s, i) => ({
-          business_id:   biz.id,
-          name:          s.name,
-          emoji:         s.emoji,
-          unit:          s.unit,
-          default_price: s.price,
-          sort_order:    i,
-          active:        true,
-        }))
+        .map((s, i) => ({ business_id: biz.id, name: s.name, emoji: s.emoji, unit: s.unit, default_price: s.price, sort_order: i, active: true }))
 
-      if (serviceRows.length > 0) {
-        await supabase.from('services').insert(serviceRows)
-      }
+      if (serviceRows.length > 0) await supabase.from('services').insert(serviceRows)
 
       router.push('/dashboard/settings/stripe-connect')
       router.refresh()
@@ -239,6 +212,7 @@ export default function SignupForm() {
 
   const inputClass = "w-full px-4 py-3 bg-white/[0.06] border border-white/10 rounded-lg text-sm text-white placeholder-white/20 outline-none focus:border-blue-400 transition-colors"
   const selectClass = "w-full px-4 py-3 bg-white/[0.06] border border-white/10 rounded-lg text-sm text-white outline-none focus:border-blue-400 transition-colors appearance-none"
+  const passwordsMatch = confirmPw && password !== confirmPw
 
   return (
     <div className="min-h-screen bg-[#0E1117] flex flex-col items-center justify-center px-4 py-12"
@@ -277,11 +251,22 @@ export default function SignupForm() {
             </div>
             <div>
               <label className="block text-xs font-bold tracking-widest uppercase text-white/40 mb-2">Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder="••••••••" className={inputClass} />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" className={inputClass} />
+              <PasswordStrength password={password} />
             </div>
             <div>
               <label className="block text-xs font-bold tracking-widest uppercase text-white/40 mb-2">Confirm Password</label>
-              <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} required minLength={8} placeholder="••••••••" className={inputClass} />
+              <input
+                type="password"
+                value={confirmPw}
+                onChange={e => setConfirmPw(e.target.value)}
+                required
+                placeholder="••••••••"
+                className={`${inputClass} ${passwordsMatch ? 'border-red-500/40' : ''}`}
+              />
+              {passwordsMatch && (
+                <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
+              )}
             </div>
             {error && <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">{error}</div>}
             <button type="submit" className="w-full py-3.5 bg-blue-500 text-white font-bold text-sm rounded-lg hover:bg-blue-400 transition-all">Continue →</button>
@@ -326,8 +311,12 @@ export default function SignupForm() {
           <form onSubmit={handleStep3} className="space-y-5">
             <div>
               <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif' }}
-                  className="text-2xl font-semibold text-white mb-1">{inviteData ? 'Complete your profile' : 'Set up services'}</h2>
-              <p className="text-sm text-white/40">{inviteData ? 'Finish setting up your account' : 'Configure your service offerings'}</p>
+                  className="text-2xl font-semibold text-white mb-1">
+                {inviteData ? 'Complete your profile' : 'Set up services'}
+              </h2>
+              <p className="text-sm text-white/40">
+                {inviteData ? 'Finish setting up your account' : 'Configure your service offerings'}
+              </p>
             </div>
             {inviteData ? (
               <>
@@ -367,7 +356,9 @@ export default function SignupForm() {
                 ))}
               </div>
             )}
-            <p className="text-xs text-white/30 text-center">{inviteData ? 'You\'ll be added to the team after signup' : 'These are your starting defaults. You can set different prices per customer.'}</p>
+            <p className="text-xs text-white/30 text-center">
+              {inviteData ? "You'll be added to the team after signup" : 'These are your starting defaults. You can set different prices per customer.'}
+            </p>
             {error && <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">{error}</div>}
             <div className="flex gap-3 pt-1">
               <button type="button" onClick={() => setStep(inviteData ? 1 : 2)} className="flex-1 py-3.5 border border-white/10 text-white/50 text-sm rounded-lg hover:border-white/20 transition-all">Back</button>
