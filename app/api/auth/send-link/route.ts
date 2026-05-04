@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     let emailSent = false;
     let smsSent = false;
 
-    // ── SMS (primary) ──
+    // ── SMS (primary) — only mark success if status is sent/delivered ──
     if (phone) {
       const twilioSid   = process.env.TWILIO_ACCOUNT_SID;
       const twilioAuth  = process.env.TWILIO_AUTH_TOKEN;
@@ -82,8 +82,21 @@ export async function POST(req: NextRequest) {
             }
           );
 
-          if (twilioRes.ok) smsSent = true;
-          else {
+          if (twilioRes.ok) {
+            const twilioData = await twilioRes.json()
+            // Only mark SMS as sent if status is queued or sent
+            // If 10DLC not approved, Twilio returns status 'failed' or error code 30007/30034
+            const status = twilioData.status
+            const errorCode = twilioData.error_code
+            if (
+              (status === 'queued' || status === 'sent' || status === 'delivered') &&
+              !errorCode
+            ) {
+              smsSent = true
+            } else {
+              console.warn('Twilio message not delivered:', status, errorCode)
+            }
+          } else {
             const err = await twilioRes.json();
             console.error("Twilio error:", err);
           }
