@@ -202,7 +202,7 @@ export default function ScheduleJobPage() {
                       type="number"
                       value={selected.price}
                       onChange={(e) => updateServicePrice(svc.id, e.target.value)}
-                      className="w-20 px-2 py-1 border border-[#DDE1EC] rounded text-sm text-right font-mono outline-none focus:border-[#4F8EF7]"
+                      className="w-20 px-2 py-1 border border-[#DDE1EC] rounded text-sm text-right font-mono text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white"
                       onClick={(e) => e.stopPropagation()}
                     />
                   </div>
@@ -229,7 +229,7 @@ export default function ScheduleJobPage() {
               value={addon.name}
               onChange={(e) => updateAddon(i, "name", e.target.value)}
               placeholder="Custom item name"
-              className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
+              className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
             />
             <div className="flex items-center gap-1">
               <span className="text-[#6B7490] text-sm">$</span>
@@ -238,7 +238,7 @@ export default function ScheduleJobPage() {
                 value={addon.price}
                 onChange={(e) => updateAddon(i, "price", e.target.value)}
                 placeholder="0"
-                className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right font-mono outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
+                className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right font-mono text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white"
               />
             </div>
             <button onClick={() => removeAddon(i)} className="text-[#6B7490] hover:text-[#E05252]">
@@ -264,7 +264,7 @@ export default function ScheduleJobPage() {
               type="datetime-local"
               value={scheduledFor}
               onChange={(e) => setScheduledFor(e.target.value)}
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white"
             />
           </div>
           <div>
@@ -274,7 +274,7 @@ export default function ScheduleJobPage() {
             <select
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]"
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white"
             >
               <option value="">Unassigned</option>
               {teamMembers.map((m, i) => (
@@ -291,7 +291,7 @@ export default function ScheduleJobPage() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any notes for the crew..."
               rows={2}
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] resize-none"
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white resize-none"
             />
           </div>
         </div>

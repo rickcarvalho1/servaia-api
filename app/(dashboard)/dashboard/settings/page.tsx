@@ -68,7 +68,7 @@ export default function SettingsPage() {
         if (svc.id.startsWith('new_')) {
           await supabase.from('services').insert({ business_id: businessId, name: svc.name, emoji: svc.emoji, unit: svc.unit, default_price: svc.default_price, active: svc.active, sort_order: svc.sort_order })
         } else {
-          await supabase.from('services').update({ name: svc.name, emoji: svc.emoji, unit: svc.unit, default_price: svc.default_price, active: svc.active }).eq('id', svc.id)
+          await supabase.from('services').update({ name: svc.name, emoji: svc.emoji, unit: svc.unit, default_price: svc.default_price, active: svc.active, sort_order: svc.sort_order }).eq('id', svc.id)
         }
       }
       flash('Services saved')
@@ -82,11 +82,20 @@ export default function SettingsPage() {
   }
 
   function addService() {
-    setServices(prev => [...prev, { id: `new_${Date.now()}`, business_id: businessId, name: '', emoji: '🔧', unit: 'visit', default_price: 0, active: true, sort_order: prev.length, created_at: new Date().toISOString() }])
+    setServices(prev => [...prev, { id: `new_${Date.now()}`, business_id: businessId, name: '', emoji: '🔧', unit: 'visit', default_price: 0, active: true, sort_order: prev.length }])
   }
 
   function updateService(id: string, field: string, value: any) {
     setServices(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s))
+  }
+
+  function moveService(index: number, direction: 'up' | 'down') {
+    const newServices = [...services]
+    const swapIndex = direction === 'up' ? index - 1 : index + 1
+    if (swapIndex < 0 || swapIndex >= newServices.length) return
+    ;[newServices[index], newServices[swapIndex]] = [newServices[swapIndex], newServices[index]]
+    newServices.forEach((s, i) => s.sort_order = i)
+    setServices(newServices)
   }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -173,13 +182,13 @@ export default function SettingsPage() {
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Company Name</label>
             <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
           </div>
           <div>
             <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Logo</label>
             {logoUrl && <div className="mb-3"><img src={logoUrl} alt="Company logo" className="h-16 w-16 rounded-lg object-cover border border-[#DDE1EC]" /></div>}
             <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo}
-              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#4F8EF7] file:text-white hover:file:bg-[#3B82F6]" />
+              className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#4F8EF7] file:text-white hover:file:bg-[#3B82F6]" />
             {uploadingLogo && <p className="text-xs text-[#6B7490] mt-1">Uploading...</p>}
           </div>
           <button onClick={saveBranding} disabled={saving}
@@ -200,19 +209,19 @@ export default function SettingsPage() {
             <div>
               <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Owner Role</label>
               <input type="text" value={roleNameOwner} onChange={e => setRoleNameOwner(e.target.value)} placeholder="Owner"
-                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
               <p className="text-xs text-[#6B7490] mt-1">e.g. Boss, Director, Principal</p>
             </div>
             <div>
               <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Manager Role</label>
               <input type="text" value={roleNameManager} onChange={e => setRoleNameManager(e.target.value)} placeholder="Manager"
-                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
               <p className="text-xs text-[#6B7490] mt-1">e.g. Foreman, Supervisor, Lead</p>
             </div>
             <div>
               <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Field Tech Role</label>
               <input type="text" value={roleNameTech} onChange={e => setRoleNameTech(e.target.value)} placeholder="Field Tech"
-                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+                className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
               <p className="text-xs text-[#6B7490] mt-1">e.g. Crew, Technician, Installer</p>
             </div>
           </div>
@@ -240,7 +249,7 @@ export default function SettingsPage() {
               <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490]">Surcharge percentage</label>
               <div className="flex items-center gap-3">
                 <input type="number" step="0.1" min="0" value={surchargePercentage} onChange={e => setSurchargePercentage(parseFloat(e.target.value) || 0)}
-                  className="w-24 px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] bg-[#F8F9FC] outline-none focus:border-[#4F8EF7]" />
+                  className="w-24 px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] bg-white outline-none focus:border-[#4F8EF7]" />
                 <span className="text-sm text-[#6B7490]">%</span>
               </div>
             </div>
@@ -273,21 +282,32 @@ export default function SettingsPage() {
         </div>
 
         <div className="divide-y divide-[#DDE1EC]">
-          {services.map(svc => (
+          {services.map((svc, index) => (
             <div key={svc.id} className="flex items-center gap-3 px-6 py-3">
+              {/* Reorder buttons */}
+              <div className="flex flex-col gap-0.5 flex-shrink-0">
+                <button onClick={() => moveService(index, 'up')} disabled={index === 0}
+                  className="w-5 h-4 flex items-center justify-center text-[#9BA3B8] hover:text-[#0E1117] disabled:opacity-20 disabled:cursor-not-allowed text-xs leading-none">
+                  ▲
+                </button>
+                <button onClick={() => moveService(index, 'down')} disabled={index === services.length - 1}
+                  className="w-5 h-4 flex items-center justify-center text-[#9BA3B8] hover:text-[#0E1117] disabled:opacity-20 disabled:cursor-not-allowed text-xs leading-none">
+                  ▼
+                </button>
+              </div>
               <select value={svc.emoji} onChange={e => updateService(svc.id, 'emoji', e.target.value)}
-                className="w-12 text-xl bg-[#F8F9FC] border border-[#DDE1EC] rounded-lg text-center outline-none focus:border-[#4F8EF7] py-1.5 cursor-pointer">
+                className="w-12 text-xl bg-white border border-[#DDE1EC] rounded-lg text-center outline-none focus:border-[#4F8EF7] py-1.5 cursor-pointer">
                 {EMOJIS.map(em => <option key={em} value={em}>{em}</option>)}
               </select>
               <input type="text" value={svc.name} onChange={e => updateService(svc.id, 'name', e.target.value)} placeholder="Service name"
-                className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+                className="flex-1 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
               <div className="flex items-center gap-1">
                 <span className="text-[#6B7490] text-sm">$</span>
                 <input type="number" value={svc.default_price} onChange={e => updateService(svc.id, 'default_price', parseFloat(e.target.value) || 0)}
-                  className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] font-mono" />
+                  className="w-20 px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-right text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white font-mono" />
               </div>
               <select value={svc.unit} onChange={e => updateService(svc.id, 'unit', e.target.value)}
-                className="px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC] appearance-none">
+                className="px-3 py-2 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] outline-none focus:border-[#4F8EF7] bg-white appearance-none">
                 {UNITS.map(u => <option key={u} value={u}>/{u}</option>)}
               </select>
               <button onClick={() => updateService(svc.id, 'active', !svc.active)}
@@ -333,7 +353,7 @@ export default function SettingsPage() {
                 </label>
                 <input type="number" value={bulkValue} onChange={e => setBulkValue(e.target.value)}
                   placeholder={bulkType === 'pct' ? 'e.g. 10 or -10' : 'e.g. 5 or -5'}
-                  className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm outline-none focus:border-[#4F8EF7] bg-[#F8F9FC]" />
+                  className="w-full px-4 py-3 border border-[#DDE1EC] rounded-lg text-sm text-[#0E1117] placeholder-[#9BA3B8] outline-none focus:border-[#4F8EF7] bg-white" />
               </div>
               <div>
                 <label className="block text-xs font-bold tracking-widest uppercase text-[#6B7490] mb-2">Apply To</label>
