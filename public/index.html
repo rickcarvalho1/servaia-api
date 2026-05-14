@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Servaia — Invoices Are Dead. Get Paid Like It.</title>
-  <meta name="description" content="You will never wonder when you're getting paid again. Servaia charges the card automatically the second the job is done. No invoices. No chasing. $49/month." />
-  <meta name="keywords" content="landscaping payment software, field service payment app, automatic payment collection, stop chasing invoices, get paid same day, HVAC payment software" />
+  <meta name="description" content="No monthly fee. No contract. Unlimited team members. We set it up, your crew hits Job Done, you get paid. Automatic card charges the second the job is done." />
+  <meta name="keywords" content="landscaping payment software, field service payment app, automatic payment collection, stop chasing invoices, get paid same day, HVAC payment software, free field service software" />
   <link rel="canonical" href="https://servaiapay.com" />
   <meta property="og:title" content="Servaia — Invoices Are Dead. Get Paid Like It." />
-  <meta property="og:description" content="You will never wonder when you're getting paid again. Card charges automatically when the job is done. $49/month. No contracts." />
+  <meta property="og:description" content="No monthly fee. No contract. Unlimited team. Job done, card charges automatically, money next day." />
   <meta property="og:url" content="https://servaiapay.com" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://servaiapay.com/icon-512x512.png" />
@@ -18,7 +18,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Servaia","applicationCategory":"BusinessApplication","operatingSystem":"Web, iOS, Android","description":"Automatic payment collection for field service businesses.","url":"https://servaiapay.com","offers":{"@type":"Offer","price":"49","priceCurrency":"USD"}}</script>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P8R0RMWNW3"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-P8R0RMWNW3');
+  </script>
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Servaia","applicationCategory":"BusinessApplication","operatingSystem":"Web, iOS, Android","description":"No monthly fee. Automatic payment collection for field service businesses.","url":"https://servaiapay.com","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+
   <style>
     :root {
       --bg:#0A0C10;--bg2:#0F1219;--bg3:#141820;
@@ -68,8 +79,8 @@
     .hero-eyebrow{display:inline-block;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.2);padding:6px 16px;border-radius:999px;font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:32px;}
     .hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(3.5rem,9vw,7.5rem);line-height:0.92;letter-spacing:0.02em;max-width:900px;margin:0 auto;}
     .hero h1 .gold{color:var(--gold);}
-    .hero-tagline{font-size:clamp(1.1rem,2.5vw,1.4rem);color:var(--muted);font-weight:500;margin:24px auto 0;max-width:580px;line-height:1.5;}
-    .hero-tagline strong{color:var(--text);}
+    .hero-tagline{font-size:clamp(1.1rem,2.5vw,1.35rem);color:var(--text);font-weight:700;margin:28px auto 0;max-width:680px;line-height:1.4;}
+    .hero-tagline .gold{color:var(--gold);}
     .hero-sub{max-width:520px;margin:16px auto 0;color:var(--muted);font-size:1rem;line-height:1.7;}
     .hero-actions{margin-top:40px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;}
     .hero-fine{color:var(--muted);font-size:0.82rem;width:100%;margin-top:10px;}
@@ -87,6 +98,13 @@
     .section-title{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:clamp(2.2rem,5vw,3.8rem);line-height:1;letter-spacing:0.02em;margin-bottom:16px;}
     .section-title .gold{color:var(--gold);}
     .section-sub{text-align:center;color:var(--muted);font-size:1rem;max-width:500px;margin:0 auto 56px;line-height:1.65;}
+
+    /* THREE PILLARS */
+    .pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:0;}
+    .pillar-card{background:var(--bg3);border:1px solid rgba(201,168,76,0.15);border-radius:var(--radius);padding:36px 32px;text-align:center;}
+    .pillar-icon{font-size:2.5rem;margin-bottom:16px;}
+    .pillar-card h3{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:0.02em;color:var(--gold);margin-bottom:10px;}
+    .pillar-card p{color:var(--muted);font-size:0.925rem;line-height:1.6;}
 
     /* PAIN */
     .pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:48px;}
@@ -134,11 +152,11 @@
     .industry-item:hover{border-color:var(--gold);color:var(--text);}
 
     /* PRICING */
-    .pricing-card{max-width:600px;margin:0 auto;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:28px;padding:52px 48px;text-align:center;position:relative;overflow:hidden;}
+    .pricing-card{max-width:640px;margin:0 auto;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:28px;padding:52px 48px;text-align:center;position:relative;overflow:hidden;}
     .pricing-card::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:500px;height:500px;background:radial-gradient(circle,rgba(201,168,76,0.05) 0%,transparent 70%);pointer-events:none;}
     .price-tag{display:inline-block;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.2);padding:5px 14px;border-radius:999px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:20px;}
-    .price-amount{font-family:'Bebas Neue',sans-serif;font-size:clamp(4rem,10vw,6rem);color:var(--gold);line-height:1;letter-spacing:0.02em;}
-    .price-period{font-size:1.1rem;color:var(--muted);}
+    .price-amount{font-family:'Bebas Neue',sans-serif;font-size:clamp(4rem,10vw,6.5rem);color:var(--gold);line-height:1;letter-spacing:0.02em;}
+    .price-period{font-size:1rem;color:var(--muted);display:block;margin-top:4px;}
     .price-one-job{font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--green);margin:10px 0 32px;display:block;}
     .pricing-features{list-style:none;text-align:left;display:flex;flex-direction:column;gap:14px;margin-bottom:40px;}
     .pricing-features li{display:flex;align-items:flex-start;gap:12px;font-size:0.95rem;color:var(--text);}
@@ -149,7 +167,7 @@
     .cta-section{padding:104px 0;text-align:center;background:linear-gradient(to bottom,var(--bg2),var(--bg));}
     .cta-section h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.8rem,7vw,5.5rem);line-height:0.95;letter-spacing:0.02em;margin-bottom:20px;}
     .cta-section h2 .gold{color:var(--gold);}
-    .cta-section p{color:var(--muted);font-size:1.05rem;max-width:460px;margin:0 auto 40px;line-height:1.7;}
+    .cta-section p{color:var(--muted);font-size:1.05rem;max-width:500px;margin:0 auto 40px;line-height:1.7;}
 
     /* FOOTER */
     .footer{padding:40px 0;border-top:1px solid var(--border);}
@@ -162,17 +180,6 @@
     @media(min-width:768px){.nav-links{display:flex;}.nav-login{display:inline;}.hamburger{display:none;}.mobile-menu{display:none!important;}}
     @media(max-width:767px){.hero{padding:72px 0 56px;}.section{padding:64px 0;}.pricing-card{padding:36px 24px;}.calc-wrap{padding:32px 24px;}.pain-stat-row{padding:32px 24px;}}
   </style>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P8R0RMWNW3"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-P8R0RMWNW3');
-  </script>
-
 </head>
 <body>
 
@@ -187,7 +194,7 @@
       </div>
       <div class="nav-right">
         <a class="nav-login" href="https://app.servaiapay.com/login">Login</a>
-        <a class="btn btn-gold" href="https://app.servaiapay.com/get-started">Start Free Trial</a>
+        <a class="btn btn-gold" href="https://app.servaiapay.com/get-started">Get Started Free</a>
         <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -197,7 +204,7 @@
       <a href="#pricing" onclick="closeMenu()">Pricing</a>
       <a href="https://calendly.com/rick-servaiapay" onclick="closeMenu()">Book a Call</a>
       <a href="https://app.servaiapay.com/login" onclick="closeMenu()">Login →</a>
-      <a href="https://app.servaiapay.com/get-started" class="mobile-cta" onclick="closeMenu()">Start Free Trial</a>
+      <a href="https://app.servaiapay.com/get-started" class="mobile-cta" onclick="closeMenu()">Get Started Free</a>
     </div>
   </nav>
 
@@ -208,15 +215,18 @@
       <div class="container">
         <div class="hero-eyebrow">Built for field service businesses</div>
         <h1>INVOICES ARE DEAD.<br><span class="gold">GET PAID LIKE IT.</span></h1>
-        <p class="hero-tagline"><strong>You will never wonder when you're getting paid again.</strong></p>
+        <p class="hero-tagline">
+          No monthly fee. No contract. Unlimited team members.<br>
+          <span class="gold">We set it up — Your crew hits "Job Done" — You get paid.</span>
+        </p>
         <p class="hero-sub">
-          Your crew marks the job done. The card charges automatically.
-          Same day. Every job. Forever. No invoice. No follow-up. No wondering.
+          Card charges automatically. Money in your account as soon as next day.
+          No invoice. No follow-up. No wondering. Ever.
         </p>
         <div class="hero-actions">
           <a class="btn btn-outline btn-lg" href="https://calendly.com/rick-servaiapay">Book a 15-Min Call</a>
-          <a class="btn btn-gold btn-lg" href="https://app.servaiapay.com/get-started">Start Free — 30 Days</a>
-          <p class="hero-fine">No credit card required &nbsp;·&nbsp; Free for first 50 businesses &nbsp;·&nbsp; $49/month after that &nbsp;·&nbsp; Cancel anytime</p>
+          <a class="btn btn-gold btn-lg" href="https://app.servaiapay.com/get-started">Get Started Free →</a>
+          <p class="hero-fine">No monthly fee, ever &nbsp;·&nbsp; No contract &nbsp;·&nbsp; Unlimited team members &nbsp;·&nbsp; We make money when you make money</p>
         </div>
       </div>
     </section>
@@ -225,33 +235,60 @@
     <div class="proof-bar">
       <div class="container">
         <div class="proof-bar-inner">
-          <div class="proof-item"><div class="proof-dot"></div>No invoices ever</div>
-          <div class="proof-item"><div class="proof-dot"></div>No chasing payments</div>
-          <div class="proof-item"><div class="proof-dot"></div>Automatic card charge</div>
-          <div class="proof-item"><div class="proof-dot"></div>Same-day deposits</div>
-          <div class="proof-item"><div class="proof-dot"></div>No contracts</div>
+          <div class="proof-item"><div class="proof-dot"></div>No monthly fee. Ever.</div>
+          <div class="proof-item"><div class="proof-dot"></div>No contract</div>
           <div class="proof-item"><div class="proof-dot"></div>Unlimited team members</div>
+          <div class="proof-item"><div class="proof-dot"></div>Automatic card charge</div>
+          <div class="proof-item"><div class="proof-dot"></div>Money next day</div>
+          <div class="proof-item"><div class="proof-dot"></div>We set it all up</div>
         </div>
       </div>
     </div>
 
-    <!-- PAIN -->
+    <!-- THREE PILLARS -->
     <section class="section">
       <div class="container">
+        <div class="section-label">Why Servaia</div>
+        <h2 class="section-title">EVERYTHING YOUR BUSINESS NEEDS.<br><span class="gold">NOTHING YOU DON'T.</span></h2>
+        <p class="section-sub">Three things nobody else offers at this price. Which is zero.</p>
+
+        <div class="pillars">
+          <div class="pillar-card">
+            <div class="pillar-icon">💳</div>
+            <h3>Get Paid Automatically</h3>
+            <p>Your crew marks the job done. The card on file charges instantly. Money in your account as soon as next day. No invoice. No asking. No waiting.</p>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon">👥</div>
+            <h3>Unlimited Team</h3>
+            <p>Add every crew member, manager, and office staff. No per-user fees. No plan limits. Your whole team, no extra charge. Ever.</p>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon">$0</div>
+            <h3>No Monthly Fee</h3>
+            <p>We don't charge a subscription. We make money when you make money — a small processing fee per transaction. That's it. Aligned incentives.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAIN -->
+    <section class="section section-alt">
+      <div class="container">
         <div class="section-label">The real problem</div>
-        <h2 class="section-title">THE INVOICE SYSTEM<br><span class="gold">IS BROKEN. ALWAYS WAS.</span></h2>
-        <p class="section-sub">You do the work. You send the invoice. You wait. Some customers pay. Some don't. And every day that passes, that money gets harder to collect.</p>
+        <h2 class="section-title">YOU DON'T EVEN KNOW<br><span class="gold">HOW MUCH YOU'RE OWED.</span></h2>
+        <p class="section-sub">Most service businesses aren't losing sleep over unpaid invoices. They just quietly stop getting paid — and move on to the next job.</p>
 
         <div class="pain-grid">
           <div class="pain-card">
             <div class="pain-icon">📋</div>
             <h3>The invoice disappears</h3>
-            <p>You finish the job, send the invoice, move on to the next one. Some customers pay. Some don't. You're not always sure which. That $300 just disappears quietly.</p>
+            <p>You finish the job, send the invoice, move on. Some customers pay. Some don't. You're not always sure which. That $300 just disappears quietly.</p>
           </div>
           <div class="pain-card">
             <div class="pain-icon">📅</div>
             <h3>End-of-month billing</h3>
-            <p>Work done May 1st doesn't hit your account until mid-June — if it comes at all. You're financing your customers' lives with your own cash flow every single month.</p>
+            <p>Work done May 1st doesn't hit your account until mid-June — if it comes at all. You're financing your customers' lives with your own cash flow every month.</p>
           </div>
           <div class="pain-card">
             <div class="pain-icon">📉</div>
@@ -272,40 +309,40 @@
     </section>
 
     <!-- HOW IT WORKS -->
-    <section id="how-it-works" class="section section-alt">
+    <section id="how-it-works" class="section">
       <div class="container">
         <div class="section-label">How it works</div>
-        <h2 class="section-title">SET UP ONCE.<br><span class="gold">GETS PAID FOREVER.</span></h2>
-        <p class="section-sub">Three steps. Your crew doesn't change how they work. The money just shows up.</p>
+        <h2 class="section-title">WE SET IT UP.<br><span class="gold">YOUR CREW HITS "JOB DONE." YOU GET PAID.</span></h2>
+        <p class="section-sub">Three steps. We handle the setup. Your crew doesn't change how they work. The money just shows up.</p>
         <div class="steps">
           <article class="step-card">
             <div class="step-number">1</div>
-            <h3>Customer Saves Their Card</h3>
-            <p>You send a secure link before the first job. They tap it, enter their card once. That's the last time payment is ever a conversation between you and that customer.</p>
-            <div class="step-result">→ Card on file. Forever.</div>
+            <h3>We Set Everything Up</h3>
+            <p>We onboard your business, add your services, and send secure card authorization links to your customers. They save their card once. You never think about it again.</p>
+            <div class="step-result">→ Done for you. Not by you.</div>
           </article>
           <article class="step-card">
             <div class="step-number">2</div>
-            <h3>Crew Marks the Job Done</h3>
+            <h3>Crew Hits "Job Done"</h3>
             <p>From their phone, in five seconds. No paperwork, no calling the office, no collecting payment on-site. Same thing they'd do anyway. Just tap done.</p>
-            <div class="step-result">→ Takes 5 seconds.</div>
+            <div class="step-result">→ Takes 5 seconds. Changes everything.</div>
           </article>
           <article class="step-card">
             <div class="step-number">3</div>
-            <h3>You Get Paid. Automatically.</h3>
-            <p>The charge fires the instant the job is marked done. Customer gets a receipt. Money hits your account same day. You didn't do a single thing.</p>
-            <div class="step-result">→ Same-day deposit. Every time.</div>
+            <h3>You Get Paid.</h3>
+            <p>The charge fires the instant the job is marked done. Customer gets a receipt automatically. Money hits your account as soon as next day. Every time.</p>
+            <div class="step-result">→ No invoice. No chasing. No wondering.</div>
           </article>
         </div>
       </div>
     </section>
 
     <!-- CALCULATOR -->
-    <section id="calculator" class="section">
+    <section id="calculator" class="section section-alt">
       <div class="container">
         <div class="section-label">Do the math</div>
         <h2 class="section-title">SEE EXACTLY WHAT<br><span class="gold">YOU'RE LOSING.</span></h2>
-        <p class="section-sub">Put in your numbers. Then decide if $49/month is expensive.</p>
+        <p class="section-sub">Put in your numbers. Then decide if switching makes sense.</p>
         <div class="calc-wrap">
           <div class="calc-headline">Your Payment Recovery Calculator</div>
           <div class="calc-desc">Move the sliders. See what slow payments are actually costing you.</div>
@@ -326,12 +363,13 @@
               <div class="calc-num"><div class="val red" id="lost-month">$1,500</div><div class="lbl">Lost per month</div></div>
               <div class="calc-num"><div class="val red" id="lost-year">$18,000</div><div class="lbl">Lost per year</div></div>
               <div class="calc-num"><div class="val green" id="recovered">$1,500</div><div class="lbl">Recovered with Servaia</div></div>
-              <div class="calc-num"><div class="val green" id="roi-val">30x</div><div class="lbl">Return on $49/month</div></div>
+              <div class="calc-num"><div class="val green" id="roi-val">∞</div><div class="lbl">ROI on $0/month</div></div>
             </div>
             <div class="calc-close">
-              <span class="roi" id="v-roi">That's a 30x return.</span>
-              <p>You're losing <strong id="v-month">$1,500/month</strong> to unpaid invoices. Servaia costs <strong>$49/month</strong>.<br>
-              One job pays for it. The other <strong id="v-jobs">39 jobs</strong> — that's all yours.</p>
+              <span class="roi" id="v-roi">$0/month to recover $1,500/month.</span>
+              <p>You're losing <strong id="v-month">$1,500/month</strong> to unpaid invoices.<br>
+              Servaia costs <strong>nothing per month.</strong> We only make money when you get paid.<br>
+              There is no reason not to.</p>
             </div>
           </div>
         </div>
@@ -339,7 +377,7 @@
     </section>
 
     <!-- INDUSTRIES -->
-    <section class="section section-alt">
+    <section class="section">
       <div class="container">
         <div class="section-label">Who it's built for</div>
         <h2 class="section-title">IF YOU SEND A CREW TO A JOB,<br><span class="gold">SERVAIA WORKS FOR YOU.</span></h2>
@@ -362,31 +400,32 @@
     </section>
 
     <!-- PRICING -->
-    <section id="pricing" class="section">
+    <section id="pricing" class="section section-alt">
       <div class="container">
         <div class="section-label">Pricing</div>
-        <h2 class="section-title">ONE JOB PAYS FOR IT.<br><span class="gold">THE REST IS ALL YOURS.</span></h2>
-        <p class="section-sub">Flat rate. No setup fees. No per-user charges. No contracts. Your price locked forever.</p>
+        <h2 class="section-title">NO MONTHLY FEE. EVER.<br><span class="gold">WE GET PAID WHEN YOU GET PAID.</span></h2>
+        <p class="section-sub">No subscription. No per-user fees. No contracts. We make money when you make money — and not before.</p>
         <div class="pricing-card">
-          <div class="price-tag">🔥 Free for the first 50 businesses</div>
-          <div><span class="price-amount">FREE</span></div>
+          <div class="price-tag">No monthly fee. Ever.</div>
+          <div class="price-amount">$0</div>
+          <span class="price-period">/month, forever</span>
           <span class="price-one-job">We make money when you make money. That's it.</span>
           <ul class="pricing-features">
-            <li>30-day free trial — no credit card required to start</li>
+            <li>No monthly fee — ever</li>
+            <li>No contract — cancel anytime, no questions</li>
             <li>Unlimited customers, jobs, and team members</li>
+            <li>We set everything up for you</li>
             <li>Automatic card charges the moment jobs are marked done</li>
             <li>Email and SMS receipts sent automatically to customers</li>
             <li>Full dashboard — revenue, reports, and job history</li>
-            <li>Cash, check, and invoice customers supported too</li>
-            <li>Schedule jobs and manage your crew from the app</li>
-            <li>Your price locked forever — never goes up for you</li>
-            <li>No contracts. Cancel anytime. No questions asked.</li>
+            <li>Scheduling and crew management built in</li>
+            <li>Cash and check customers supported too</li>
           </ul>
           <a class="btn btn-gold btn-lg" href="https://app.servaiapay.com/get-started" style="width:100%;margin-bottom:16px;">
-            Get Started →
+            Get Started Free →
           </a>
           <p class="price-fine">
-            Plus 3.5% + $0.30 per transaction — standard card processing fees.<br>
+            3.5% + $0.30 per transaction — standard card processing fees. We take a small platform fee from that. You keep the rest.<br><br>
             Already have an account? <a href="https://app.servaiapay.com/login" style="color:var(--gold);">Log in →</a>
           </p>
         </div>
@@ -397,12 +436,12 @@
     <section class="cta-section">
       <div class="container">
         <h2>THE WORK IS DONE.<br><span class="gold">GET PAID FOR IT.</span></h2>
-        <p>Stop wondering. Stop chasing. Stop financing your customers with your own cash flow. Every job, paid automatically, the second it's done.</p>
+        <p>No monthly fee. No contract. Unlimited team. We set it all up. Your crew hits "Job Done." You get paid. There is no reason not to start today.</p>
         <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;">
           <a class="btn btn-outline btn-lg" href="https://calendly.com/rick-servaiapay">Book a 15-Min Call</a>
-          <a class="btn btn-gold btn-lg" href="https://app.servaiapay.com/get-started">Start For Free</a>
+          <a class="btn btn-gold btn-lg" href="https://app.servaiapay.com/get-started">Get Started Free →</a>
         </div>
-        <p style="color:var(--muted);font-size:0.82rem;margin-top:16px;">No credit card required &nbsp;·&nbsp; $49/month after trial &nbsp;·&nbsp; Cancel anytime</p>
+        <p style="color:var(--muted);font-size:0.82rem;margin-top:16px;">No monthly fee, ever &nbsp;·&nbsp; No contract &nbsp;·&nbsp; We make money when you make money</p>
       </div>
     </section>
 
@@ -433,14 +472,12 @@
       document.getElementById('unpaid-val').textContent=up+'%';
       const lm=Math.round(jobs*avg*(up/100));
       const ly=lm*12;
-      const roi=Math.round(lm/49);
       document.getElementById('lost-month').textContent=fmt(lm);
       document.getElementById('lost-year').textContent=fmt(ly);
       document.getElementById('recovered').textContent=fmt(lm);
-      document.getElementById('roi-val').textContent=roi+'x';
-      document.getElementById('v-roi').textContent="That's a "+roi+"x return.";
+      document.getElementById('roi-val').textContent='∞';
+      document.getElementById('v-roi').textContent='$0/month to recover '+fmt(lm)+'/month.';
       document.getElementById('v-month').textContent=fmt(lm)+'/month';
-      document.getElementById('v-jobs').textContent=(jobs-1)+' jobs';
     }
     calc();
   </script>
