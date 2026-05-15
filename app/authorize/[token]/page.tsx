@@ -20,16 +20,19 @@ const stripePromise = loadStripe(
 function CardSetupForm({
   token,
   clientSecret,
+  businessName,
   onSuccess,
 }: {
   token: string;
   clientSecret: string;
+  businessName: string;
   onSuccess: () => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [smsOptIn, setSmsOptIn] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,6 +63,7 @@ function CardSetupForm({
         body: JSON.stringify({
           token,
           setupIntentId: setupIntent.id,
+          smsOptIn,
         }),
       });
 
@@ -81,10 +85,28 @@ function CardSetupForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement
-  options={{
-    layout: "tabs",
-  }}
-/>
+        options={{
+          layout: "tabs",
+        }}
+      />
+
+      {/* SMS Opt-In */}
+      <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-4">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={smsOptIn}
+            onChange={e => setSmsOptIn(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#0E1117] cursor-pointer flex-shrink-0"
+          />
+          <span className="text-xs text-gray-600 leading-relaxed">
+            By checking this box, I agree to receive SMS notifications from{" "}
+            <strong>{businessName}</strong> via Servaia regarding job completions
+            and payment receipts. Message and data rates may apply. Reply{" "}
+            <strong>STOP</strong> to unsubscribe at any time.
+          </span>
+        </label>
+      </div>
 
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -94,7 +116,7 @@ function CardSetupForm({
 
       <button
         type="submit"
-        disabled={submitting || !stripe}
+        disabled={submitting || !stripe || !smsOptIn}
         className="w-full rounded-xl bg-[#0E1117] text-white py-3.5 text-sm font-semibold tracking-wide transition hover:bg-[#1a2130] disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? (
@@ -253,7 +275,7 @@ export default function AuthorizePage() {
       </div>
 
       <Elements stripe={stripePromise} options={elementsOptions}>
-        <CardSetupForm token={token} clientSecret={clientSecret} onSuccess={() => setState("success")} />
+        <CardSetupForm token={token} clientSecret={clientSecret} businessName={businessName} onSuccess={() => setState("success")} />
       </Elements>
     </PageShell>
   );
