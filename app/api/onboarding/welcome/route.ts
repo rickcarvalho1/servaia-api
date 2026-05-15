@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   }
 
   const firstName = name?.split(' ')[0] || 'there'
-  const subject = `Welcome to Servaia, ${firstName} — Your 30-Day Free Trial Starts Now`
+  const subject = `Welcome to Servaia, ${firstName} — Your account is live`
 
   const html = `
 <!DOCTYPE html>
@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
 
         <p class="greeting">Hey ${firstName} 👋</p>
         <p class="intro">
-          Welcome to Servaia! Your account for <strong>${company || 'your business'}</strong> is live and your 30-day free trial has started.
-          No monthly fee during your trial — you only pay standard transaction fees when you collect payments.
+          Welcome to Servaia! Your account for <strong>${company || 'your business'}</strong> is live.
+          No monthly fee — ever. You only pay 3.5% + $0.30 per transaction when you collect payments. We make money when you make money.
         </p>
 
         <div class="cta-block">
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
               <div class="step-num">7</div>
               <div class="step-content">
                 <strong>Mark your first job done</strong>
-                <span>Crew taps "Charge" — customer's card is charged automatically. Money hits your account same day.</span>
+                <span>Crew taps "Charge" — customer's card is charged automatically. Money hits your account as soon as next day.</span>
                 <a href="https://app.servaiapay.com/dashboard/jobs" class="step-link">View Jobs →</a>
               </div>
             </li>
@@ -192,13 +192,8 @@ export async function POST(request: NextRequest) {
           </div>
 
           <div class="faq-item">
-            <div class="faq-q">What happens after my 30-day trial?</div>
-            <div class="faq-a">You'll need to subscribe at $49/month to keep using Servaia. If you don't subscribe, your dashboard access is paused until you do. No charges happen automatically — you choose when to subscribe.</div>
-          </div>
-
-          <div class="faq-item">
-            <div class="faq-q">Can I cancel anytime?</div>
-            <div class="faq-a">Yes. No contracts, no cancellation fees. Cancel from your billing page anytime.</div>
+            <div class="faq-q">What does Servaia cost?</div>
+            <div class="faq-a">Nothing per month. Ever. We make money from a small platform fee built into the 3.5% + $0.30 card processing on each transaction. You pay nothing unless you're getting paid.</div>
           </div>
 
           <div class="faq-item">
@@ -212,10 +207,10 @@ export async function POST(request: NextRequest) {
           </div>
         </div>
 
-        <!-- Pricing reminder -->
+        <!-- Pricing box -->
         <div class="pricing-box">
-          <strong>💰 Your trial pricing</strong>
-          <p>Free for 30 days. No monthly fee during your trial — you only pay 3.5% + $0.30 per transaction when you collect payments. After 30 days: $49/month + transaction fees. Early signups lock in $49/month forever.</p>
+          <strong>💰 How pricing works</strong>
+          <p>No monthly fee. Ever. You only pay 3.5% + $0.30 per transaction when you collect a payment. We make money when you make money — and not before.</p>
         </div>
 
         <div class="sig">
@@ -247,7 +242,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (phone) {
-    const smsBody = `Hey ${firstName}, welcome to Servaia! Your 30-day free trial is active. First step — connect your Stripe account: https://app.servaiapay.com/dashboard/settings/stripe-connect`
+    const smsBody = `Hey ${firstName}, welcome to Servaia! Your account is live. No monthly fee — ever. First step — connect your Stripe account: https://app.servaiapay.com/dashboard/settings/stripe-connect`
     await sendSMS({ to: phone, body: smsBody })
   }
 

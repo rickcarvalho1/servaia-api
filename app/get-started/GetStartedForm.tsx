@@ -95,9 +95,8 @@ export default function GetStartedForm() {
         owner_phone: phone,
         industry,
         trade: industry,
-        status: 'lead',
-        trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        subscription_status: 'trial',
+        status: 'active',
+        subscription_status: 'active',
       })
 
     if (companyError) {
@@ -119,9 +118,9 @@ export default function GetStartedForm() {
     <div className="min-h-screen bg-[#0E1117] text-white px-4 py-12" style={{ backgroundImage: 'linear-gradient(rgba(79,142,247,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(79,142,247,0.04) 1px, transparent 1px)', backgroundSize: '56px 56px' }}>
       <div className="mx-auto max-w-3xl">
         <div className="mb-10 text-center">
-          <p className="text-sm uppercase tracking-[0.35em] text-blue-300/70">Start your free trial</p>
+          <p className="text-sm uppercase tracking-[0.35em] text-blue-300/70">Get started free</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight">Get started with Servaia</h1>
-            <p className="mt-3 text-base text-slate-300">Self-serve onboarding for service businesses. No credit card to start — free for 30 days, then $49/month.</p>
+          <p className="mt-3 text-base text-slate-300">No monthly fee. No contract. We make money when you make money.</p>
           <div className="rounded-[28px] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/10 backdrop-blur-md">
             {step === 1 && (
               <form onSubmit={handleNext} className="space-y-6">
@@ -154,7 +153,7 @@ export default function GetStartedForm() {
 
                 {error && <div className="rounded-2xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-200">{error}</div>}
 
-                <button type="submit" className="w-full rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-400 transition">Continue to plan</button>
+                <button type="submit" className="w-full rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-400 transition">Continue</button>
               </form>
             )}
 
@@ -162,16 +161,16 @@ export default function GetStartedForm() {
               <div className="space-y-6">
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-[0.35em] text-blue-300/80">Step 2</div>
-                  <h2 className="mt-3 text-2xl font-semibold">Choose the plan</h2>
-                  <p className="mt-2 text-slate-300">One simple plan for modern service teams.</p>
+                  <h2 className="mt-3 text-2xl font-semibold">How it works</h2>
+                  <p className="mt-2 text-slate-300">Simple. Automatic. Free.</p>
                 </div>
 
                 <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-sm uppercase tracking-[0.35em] text-blue-300/80">Starter</p>
-                      <p className="mt-4 text-5xl font-semibold text-white">$49/month</p>
-                      <p className="mt-2 text-sm text-slate-400">Plus 3.5% + $0.30 per transaction</p>
+                      <p className="text-sm uppercase tracking-[0.35em] text-blue-300/80">Pricing</p>
+                      <p className="mt-4 text-5xl font-semibold text-white">$0/month</p>
+                      <p className="mt-2 text-sm text-slate-400">3.5% + $0.30 per transaction — that's it</p>
                     </div>
                   </div>
 
@@ -180,8 +179,8 @@ export default function GetStartedForm() {
                     <p>• No invoices, no follow-up texts, no waiting</p>
                     <p>• Crew marks job done — card charges automatically</p>
                     <p>• Scheduling, job tracking, photo documentation</p>
-                    <p>• Cancel anytime, no contracts</p>
-                    <p>• No credit card to start — free for 30 days, then $49/month</p>
+                    <p>• No monthly fee. No contract. Cancel anytime.</p>
+                    <p>• Unlimited team members</p>
                   </div>
                 </div>
 
@@ -197,7 +196,7 @@ export default function GetStartedForm() {
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-[0.35em] text-blue-300/80">Step 3</div>
                   <h2 className="mt-3 text-2xl font-semibold">Create your account</h2>
-                  <p className="mt-2 text-slate-300">No credit card to start — free for 30 days, then $49/month.</p>
+                  <p className="mt-2 text-slate-300">No monthly fee. No contract. We make money when you make money.</p>
                 </div>
 
                 <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6">
@@ -213,7 +212,7 @@ export default function GetStartedForm() {
                 {error && <div className="rounded-2xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-200">{error}</div>}
 
                 <button type="submit" disabled={loading} className="w-full rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-400 transition disabled:cursor-not-allowed disabled:opacity-60">
-                  {loading ? 'Creating account…' : 'Start my free trial'}
+                  {loading ? 'Creating account…' : 'Get Started Free →'}
                 </button>
               </form>
             )}
@@ -228,12 +227,12 @@ export default function GetStartedForm() {
               <div className="space-y-3 text-sm leading-7 text-slate-300">
                 <p>Centralize payments, scheduling, and job completion in one place.</p>
                 <p>Designed for teams that want a confident, modern experience without the startup fluff.</p>
-                <p>Launch quickly and upgrade billing when you're ready after the first login.</p>
+                <p>No monthly fee. We set everything up. Your crew hits Job Done. You get paid.</p>
               </div>
               <div className="rounded-3xl bg-slate-900/80 p-5 border border-white/10">
                 <p className="text-xs uppercase tracking-[0.35em] text-blue-300/80">Billing</p>
-                <p className="mt-3 text-lg font-semibold text-white">Stripe setup after first login</p>
-                <p className="mt-2 text-slate-400 text-sm">You will sign up now and add billing from the dashboard once your trial begins.</p>
+                <p className="mt-3 text-lg font-semibold text-white">Connect Stripe after first login</p>
+                <p className="mt-2 text-slate-400 text-sm">Sign up now and connect your bank account from the dashboard. Takes 5 minutes.</p>
               </div>
             </div>
           </aside>

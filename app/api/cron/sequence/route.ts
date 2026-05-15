@@ -17,16 +17,16 @@ function daysBetween(date1: Date, date2: Date) {
 }
 
 const DAY2_MESSAGES: Record<string, string> = {
-  'Landscaping': `Hey [firstName] — just following up. Built a tool that landscaping crews are using to get paid the second a job is done — no invoices, no chasing. Free for 30 days, no contract. Want to see it? — Rick`,
-  'Hardscaping': `Hey [firstName] — following up. You finish a $8,000 patio and the money should hit your account that same day. That's what Servaia does. Free 30-day trial. Want a quick demo? — Rick`,
-  'HVAC': `Hey [firstName] — following up. Your tech finishes a $2,500 AC install — Servaia charges the customer automatically and you see it in your account same day. No invoice. No waiting. Free trial. — Rick`,
-  'Electrical': `Hey [firstName] — following up. Your guy finishes a $12,000 service upgrade — Servaia charges the customer automatically the moment he marks it done. Money same day. Free trial. — Rick`,
-  'Plumbing': `Hey [firstName] — following up. Plumber finishes a $4,000 water heater install — Servaia charges the customer automatically when he marks it done. No invoice. No waiting. — Rick`,
-  'Pool Service': `Hey [firstName] — following up. Tech finishes a $3,000 pool repair — Servaia charges the customer automatically when he marks it done. Money same day, no invoice. Free trial. — Rick`,
-  'Pest Control': `Hey [firstName] — following up. Tech finishes a treatment — Servaia charges the card on file automatically. No invoice, no follow-up. Free 30-day trial. — Rick`,
-  'Cleaning': `Hey [firstName] — following up. Cleaner finishes the job — Servaia charges the customer automatically. No invoice, no chasing. Free 30-day trial. — Rick`,
-  'Auto Detail': `Hey [firstName] — following up. Detail is done — Servaia charges the customer automatically the moment your tech marks it complete. No invoice. Free trial. — Rick`,
-  'Other': `Hey [firstName] — just following up. Built a tool that service companies are using to get paid the second a job is done — no invoices, no chasing. Free for 30 days. Want to see it? — Rick`,
+  'Landscaping': `Hey [firstName] — just following up. Built a tool that landscaping crews are using to get paid the second a job is done — no invoices, no chasing. No monthly fee, no contract. Want to see it? — Rick`,
+  'Hardscaping': `Hey [firstName] — following up. You finish a $8,000 patio and the money should hit your account that same day. That's what Servaia does. No monthly fee. Want a quick demo? — Rick`,
+  'HVAC': `Hey [firstName] — following up. Your tech finishes a $2,500 AC install — Servaia charges the customer automatically and you see it in your account same day. No invoice. No waiting. No monthly fee. — Rick`,
+  'Electrical': `Hey [firstName] — following up. Your guy finishes a $12,000 service upgrade — Servaia charges the customer automatically the moment he marks it done. Money same day. No monthly fee. — Rick`,
+  'Plumbing': `Hey [firstName] — following up. Plumber finishes a $4,000 water heater install — Servaia charges the customer automatically when he marks it done. No invoice. No waiting. No monthly fee. — Rick`,
+  'Pool Service': `Hey [firstName] — following up. Tech finishes a $3,000 pool repair — Servaia charges the customer automatically when he marks it done. Money same day, no invoice. No monthly fee. — Rick`,
+  'Pest Control': `Hey [firstName] — following up. Tech finishes a treatment — Servaia charges the card on file automatically. No invoice, no follow-up. No monthly fee. — Rick`,
+  'Cleaning': `Hey [firstName] — following up. Cleaner finishes the job — Servaia charges the customer automatically. No invoice, no chasing. No monthly fee. — Rick`,
+  'Auto Detail': `Hey [firstName] — following up. Detail is done — Servaia charges the customer automatically the moment your tech marks it complete. No invoice. No monthly fee. — Rick`,
+  'Other': `Hey [firstName] — just following up. Built a tool that service companies are using to get paid the second a job is done — no invoices, no chasing. No monthly fee. Want to see it? — Rick`,
 }
 
 const DAY5_SUBJECTS: Record<string, string> = {
@@ -38,7 +38,7 @@ const DAY5_SUBJECTS: Record<string, string> = {
   'Other': 'Get paid the moment the job is done — no invoices, no chasing',
 }
 
-const DAY8_MESSAGE = `Last one from me [firstName] — servaiapay.com if you ever want to get paid the moment a job's done instead of chasing it. — Rick`
+const DAY8_MESSAGE = `Last one from me [firstName] — servaiapay.com if you ever want to get paid the moment a job's done instead of chasing it. No monthly fee. Ever. — Rick`
 
 function getDay5Email(firstName: string, industry: string, subject: string) {
   return {
@@ -54,7 +54,7 @@ function getDay5Email(firstName: string, industry: string, subject: string) {
           <li>Customer gets charged automatically — money hits your account same day</li>
         </ul>
         <p>No invoice. No follow-up. No awkward payment conversation on-site.</p>
-        <p>Free for 30 days, no credit card needed, cancel anytime.</p>
+        <p>No monthly fee. No contract. We make money when you make money.</p>
         <p>
           <a href="${APP_URL}/get-started" style="background:#f59e0b;color:#000;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;margin:8px 0;">
             See How It Works →

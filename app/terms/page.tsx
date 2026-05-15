@@ -11,28 +11,28 @@ export default function TermsPage() {
 
         <section className="mt-10 space-y-6 text-slate-200">
           <div>
-            <h2 className="text-xl font-semibold">Free trial</h2>
-            <p className="mt-3 leading-8 text-slate-300">New accounts receive a 30-day free trial. No credit card is required at signup.</p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold">Subscription pricing</h2>
-            <p className="mt-3 leading-8 text-slate-300">After the trial, the service is billed at $49 per month plus 3.5% + $0.30 per transaction.</p>
+            <h2 className="text-xl font-semibold">Pricing</h2>
+            <p className="mt-3 leading-8 text-slate-300">Servaia has no monthly fee. You are only charged a small platform fee built into the 3.5% + $0.30 card processing fee on each transaction. You pay nothing unless you are collecting payments.</p>
           </div>
 
           <div>
             <h2 className="text-xl font-semibold">Cancellation</h2>
-            <p className="mt-3 leading-8 text-slate-300">Cancel anytime with no long-term contract. You retain access through the paid period and will not be billed further afterward.</p>
+            <p className="mt-3 leading-8 text-slate-300">Cancel anytime with no long-term contract and no cancellation fees. Your data stays yours.</p>
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold">Grandfathered pricing</h2>
-            <p className="mt-3 leading-8 text-slate-300">Early signups will keep the $49/month rate permanently as long as their account remains active.</p>
+            <h2 className="text-xl font-semibold">Payment processing</h2>
+            <p className="mt-3 leading-8 text-slate-300">All card payments are processed through Stripe. Card data is never stored on Servaia servers. Stripe is PCI Level 1 certified.</p>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-semibold">Changes to terms</h2>
+            <p className="mt-3 leading-8 text-slate-300">We may update these terms from time to time. Continued use of Servaia after changes constitutes acceptance of the updated terms.</p>
           </div>
         </section>
 
         <div className="mt-10 border-t border-white/10 pt-6 text-sm text-slate-400 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Link href="/get-started" className="text-blue-300 hover:text-blue-100">Get started</Link>
+          <Link href="/get-started" className="text-blue-300 hover:text-blue-100">Get started free</Link>
           <Link href="/privacy" className="text-slate-300 hover:text-white">Privacy Policy</Link>
         </div>
       </div>
