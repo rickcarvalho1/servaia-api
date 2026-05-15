@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { CheckCircle2, AlertTriangle, ArrowRight, DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, ArrowRight, DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react'
 
 export default function PaymentsPage() {
   const supabase = createClient()
@@ -16,9 +16,6 @@ export default function PaymentsPage() {
   const [redirecting, setRedirecting] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const [setupSaving, setSetupSaving] = useState(false)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [cancelling, setCancelling] = useState(false)
-  const [cancelSuccess, setCancelSuccess] = useState(false)
   const searchParams = useSearchParams()
   const success = searchParams.get('success') === 'true'
 
@@ -101,30 +98,11 @@ export default function PaymentsPage() {
     }
   }
 
-  async function handleCancelSubscription() {
-    setCancelling(true)
-    try {
-      const res = await fetch('/api/subscription/cancel', { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to cancel subscription')
-      setCancelSuccess(true)
-      setShowCancelConfirm(false)
-      setCompany((prev: any) => ({ ...prev, subscription_status: 'cancelled' }))
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setCancelling(false)
-    }
-  }
-
   if (loading) return <div className="p-8 text-[#6B7490] text-sm">Loading payments...</div>
   if (error) return <div className="p-8 text-red-600 text-sm">{error}</div>
 
   const status = company?.stripe_connect_status || 'pending'
   const connected = !!company?.stripe_account_id
-  const isActive = company?.subscription_status === 'active'
-  const isTrial = company?.subscription_status === 'trial'
-  const isCancelled = company?.subscription_status === 'cancelled'
 
   const totalRevenue = payments.reduce((s, p) => s + Number(p.amount || 0), 0)
   const thisMonth = new Date().getMonth()
@@ -212,54 +190,10 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Cancel Confirm Modal */}
-      {showCancelConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-                <AlertCircle size={28} className="text-[#E05252]" />
-              </div>
-              <h2 className="text-xl font-bold text-[#0E1117]">Cancel Subscription?</h2>
-              <p className="text-sm text-[#6B7490] mt-2 leading-relaxed">
-                Your subscription will be cancelled at the end of your current billing period. You'll keep full access until then. This cannot be undone.
-              </p>
-            </div>
-            <div className="bg-[#FEF2F2] border border-[rgba(224,82,82,0.2)] rounded-xl p-4 mb-6">
-              <p className="text-xs text-[#E05252] font-medium">What you'll lose:</p>
-              <ul className="text-xs text-[#6B7490] mt-2 space-y-1">
-                <li>• Automatic card charging on job completion</li>
-                <li>• Customer card storage and management</li>
-                <li>• Job scheduling and crew management</li>
-                <li>• Payment history and reports</li>
-              </ul>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowCancelConfirm(false)}
-                className="flex-1 py-3 border border-[#DDE1EC] text-[#6B7490] text-sm font-semibold rounded-xl hover:bg-[#F8F9FC] transition-colors">
-                Keep My Account
-              </button>
-              <button onClick={handleCancelSubscription} disabled={cancelling}
-                className="flex-1 py-3 bg-[#E05252] text-white text-sm font-semibold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50">
-                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-[#0E1117]">Payments</h1>
         <p className="text-sm text-[#6B7490] mt-1">Your transaction history and payment settings.</p>
       </div>
-
-      {/* Cancel success banner */}
-      {cancelSuccess && (
-        <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl text-sm bg-[rgba(61,191,127,0.1)] border border-[rgba(61,191,127,0.2)]">
-          <CheckCircle2 size={16} className="text-[#3DBF7F] flex-shrink-0" />
-          <span className="text-[#0E1117] font-medium">Subscription cancelled. You have full access until the end of your billing period.</span>
-        </div>
-      )}
 
       {/* Stripe Connection */}
       <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6 mb-6">
@@ -417,33 +351,6 @@ export default function PaymentsPage() {
           )}
         </div>
       </div>
-
-      {/* Cancel Subscription */}
-      {!isCancelled && (
-        <div className="bg-white rounded-xl border border-[#DDE1EC] shadow-sm p-6">
-          <h2 className="font-semibold text-[#0E1117] mb-1">Cancel Subscription</h2>
-          <p className="text-xs text-[#6B7490] mb-4">
-            You'll keep full access until the end of your current billing period. No refunds for partial months.
-          </p>
-          <button
-            onClick={() => setShowCancelConfirm(true)}
-            className="px-4 py-2.5 border border-[rgba(224,82,82,0.3)] text-[#E05252] text-sm font-semibold rounded-lg hover:bg-[rgba(224,82,82,0.05)] transition-colors">
-            Cancel Subscription
-          </button>
-        </div>
-      )}
-
-      {isCancelled && (
-        <div className="bg-white rounded-xl border border-[rgba(224,82,82,0.2)] shadow-sm p-6">
-          <div className="flex items-center gap-3">
-            <AlertCircle size={18} className="text-[#E05252] flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-[#0E1117]">Subscription Cancelled</p>
-              <p className="text-xs text-[#6B7490] mt-0.5">Your account is cancelled. Contact us to reactivate.</p>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   )
